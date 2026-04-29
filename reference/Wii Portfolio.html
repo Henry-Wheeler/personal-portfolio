@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Henry Wheeler — Portfolio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@300;400;500;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #0d0d0d; overflow: hidden; cursor: none; }
+    #root { width: 100%; height: 100%; }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.6; }
+      50% { opacity: 1; }
+    }
+    @keyframes floatBob {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-4px); }
+    }
+    @keyframes tileAppear {
+      from { opacity: 0; transform: scale(0.92); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── Canvas dimensions (native Wii resolution)
+const W = 1920, H = 1080;
+
+// ── Color palette — exact from Figma
+const C = {
+  bg:          'rgb(242,242,242)',
+  stripe:      'rgb(225,225,225)',
+  tileFill:    'rgb(203,203,203)',
+  tileBorder:  'rgb(180,180,180)',
+  cyan:        'rgb(52,190,237)',
+  cyanGlow:    'rgba(52,190,237,0.35)',
+  cyanDark:    'rgb(36,71,155)',
+  arrowLight:  'rgb(203,246,255)',
+  arrowMid:    'rgb(98,214,255)',
+  footerFill:  'rgb(225,226,230)',
+  btnSilver:   'rgb(217,217,217)',
+  btnBorder:   'rgb(179,181,187)',
+  btnShadow:   'rgb(188,189,195)',
+  btnHighlight:'rgb(228,228,228)',
+  dateGray:    'rgb(128,128,129)',
+  textDark:    'rgb(56,62,63)',
+};
+
+const FONT = "'M PLUS Rounded 1c', sans-serif";
+
+// ─────────────────────────────────────────
+// Horizontal stripe texture
+// ─────────────────────────────────────────
+function Stripes({ style }) {
+  return (
+    <div style={{
+      backgroundImage: `repeating-linear-gradient(
+        180deg,
+        transparent 0px,
+        transparent 4px,
+        ${C.stripe} 4px,
+        ${C.stripe} 5px
+      )`,
+      pointerEvents: 'none',
+      ...style,
+    }} />
+  );
+}
+
+// ─────────────────────────────────────────
+// Channel tile — exact Figma shape (Channel-Bloc-1.svg path, 380×205)
+// ─────────────────────────────────────────
+const TILE_PATH = "M 375.94 21.2 C 375.373 16.232 373.077 11.621 369.453 8.175 C 365.83 4.729 361.11 2.667 356.12 2.35 C 317 0 259.88 0 190 0 C 120.12 0 63 0 23.88 2.35 C 18.89 2.667 14.17 4.729 10.547 8.175 C 6.923 11.621 4.627 16.232 4.06 21.2 C 1.47 42.13 0 76.16 0 102.5 C 0 128.84 1.47 162.87 4.06 183.8 C 4.627 188.768 6.923 193.379 10.547 196.825 C 14.17 200.271 18.89 202.333 23.88 202.65 C 63 205 120.12 205 190 205 C 259.88 205 317 205 356.12 202.65 C 361.11 202.333 365.83 200.271 369.453 196.825 C 373.077 193.379 375.373 188.768 375.94 183.8 C 378.53 162.87 380 128.8 380 102.5 C 380 76.2 378.53 42.13 375.94 21.2 Z";
+
+let _tileId = 0;
+function ChannelTile({ bgColor, borderColor, label, labelColor, children, onClick, delay = 0 }) {
+  const [hov, setHov] = useState(false);
+  const uid = useRef(`t${_tileId++}`).current;
+  const clipId = `clip-${uid}`;
+  const gradId = `shine-${uid}`;
+
+  return (
+    <div
+      style={{
+        position: 'relative',
+        width: 392, height: 217,
+        cursor: 'pointer',
+        userSelect: 'none',
+        animation: `tileAppear 0.35s ease both`,
+        animationDelay: `${delay}ms`,
+        filter: hov ? `drop-shadow(0 0 10px ${C.cyanGlow})` : 'drop-shadow(0 3px 6px rgba(0,0,0,0.12))',
+        transition: 'filter 0.12s ease',
+      }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onClick={onClick}
+    >
+      {/* SVG tile — exact Channel-Bloc-1 shape */}
+      <svg
+        width={380} height={205}
+        viewBox="0 0 380 205"
+        style={{
+          position: 'absolute', left: 6, top: 6,
+          transform: hov ? 'scale(1.022)' : 'scale(1)',
+          transformOrigin: '190px 102px',
+          transition: 'transform 0.12s ease',
+          overflow: 'visible',
+        }}
+      >
+        <defs>
+          <clipPath id={clipId}>
+            <path d={TILE_PATH} />
+          </clipPath>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="rgba(255,255,255,0.44)" />
+            <stop offset="46%"  stopColor="rgba(255,255,255,0)" />
+          </linearGradient>
+        </defs>
+
+        {/* Fill */}
+        <path d={TILE_PATH} fill={bgColor || C.tileFill} />
+
+        {/* Shine overlay (top half) */}
+        <path d={TILE_PATH} fill={`url(#${gradId})`} clipPath={`url(#${clipId})`} />
+
+        {/* Bottom shadow tint */}
+        <path d={TILE_PATH} fill="rgba(0,0,0,0.045)" clipPath={`url(#${clipId})`}
+          style={{ transform: 'scaleY(-1)', transformOrigin: '190px 102px' }} />
+
+        {/* Border stroke — 5px, matches Figma */}
+        <path d={TILE_PATH} fill="none"
+          stroke={hov ? C.cyan : (borderColor || C.tileBorder)}
+          strokeWidth={5}
+        />
+      </svg>
+
+      {/* Children overlay (clipped to tile shape) */}
+      <div style={{
+        position: 'absolute', left: 6, top: 6, width: 380, height: 205,
+        clipPath: `path('${TILE_PATH}')`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {children}
+      </div>
+
+      {/* Label (hover reveal) */}
+      {label && (
+        <div style={{
+          position: 'absolute', bottom: -28, left: 0, right: 0,
+          textAlign: 'center', fontFamily: FONT, fontSize: 20, fontWeight: 500,
+          color: labelColor || C.dateGray,
+          opacity: hov ? 1 : 0, transition: 'opacity 0.15s ease', pointerEvents: 'none',
+        }}>{label}</div>
+      )}
+    </div>
+  );
+}
+
+function NavArrow({ dir, onClick, visible = true }) {
+  const [hov, setHov] = useState(false);
+  if (!visible) return null;
+
+  const left = dir === 'right' ? 1766 : 114;
+  const top  = 370;
+  const gradId = `ag-${dir}`;
+
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onClick={onClick}
+      style={{
+        position: 'absolute',
+        left, top,
+        width: 51, height: 98,
+        cursor: 'pointer',
+        zIndex: 20,
+        transform: dir === 'left' ? 'scaleX(-1)' : 'none',
+        background: 'none',
+        border: 'none',
+      }}
+    >
+      {/* Arrow shape IS the button — gradient fill + stroke directly on the path, no box */}
+      <svg width={51} height={98} viewBox="0 0 51 98" style={{ display: 'block', overflow: 'visible' }}>
+        <defs>
+          <radialGradient id={gradId} cx="50%" cy="50%" r="60%" fx="50%" fy="50%">
+            <stop offset="0%"   stopColor={hov ? 'rgb(230,252,255)' : 'rgb(203,246,255)'} />
+            <stop offset="100%" stopColor={hov ? 'rgb(120,220,255)' : 'rgb(98,214,255)'} />
+          </radialGradient>
+        </defs>
+        <path
+          d="M 2.158 2.073 L 50.249 48.279 C 50.659 48.672 50.659 49.328 50.249 49.721 L 2.158 95.927 C 1.465 96.592 0.324 95.994 0.478 95.046 L 7.922 49 L 0.478 2.954 C 0.324 2.006 1.465 1.408 2.158 2.073 Z"
+          fill={`url(#${gradId})`}
+          stroke="rgb(36,71,155)"
+          strokeWidth={3}
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Circular side button (Wii / Envelope)
+// ─────────────────────────────────────────
+function CircButton({ children }) {
+  return (
+    <div style={{ position: 'relative', width: 162, height: 162 }}>
+      {/* Base circle */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        borderRadius: '50%',
+        backgroundColor: C.btnSilver,
+        border: `4px solid ${C.cyan}`,
+        boxShadow: `18px 18px 2px -3px ${C.btnShadow}, inset -6px -6px 14px 0px rgba(0,0,0,0.26)`,
+      }} />
+      {/* Crescent / highlight shape from Figma */}
+      <svg width={131} height={128} viewBox="0 0 131 128"
+        style={{ position: 'absolute', left: 8, top: 7, pointerEvents: 'none' }}>
+        <path
+          d="M 103.15 52.253 C 118.738 37.646 120.095 11.919 100.046 4.543
+             C 92.058 1.604 83.428 0 74.425 0
+             C 33.321 0 0 33.435 0 74.679
+             C 0 81.851 1.008 88.788 2.889 95.353
+             C 8.8 115.984 34.686 116.41 50.346 101.735 L 103.15 52.253 Z"
+          fill={C.btnHighlight}
+        />
+      </svg>
+      {children}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Footer bar (Union curved shape + buttons + date)
+// ─────────────────────────────────────────
+function Footer({ dateStr }) {
+  return (
+    <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, pointerEvents: 'none', zIndex: 10 }}>
+
+      {/* Flat base behind union */}
+      <div style={{
+        position: 'absolute',
+        left: 0, top: 780,
+        width: W, height: H - 780,
+        backgroundColor: C.footerFill,
+      }} />
+
+      {/* Union SVG — curved footer top edge */}
+      <div style={{ position: 'absolute', left: -9.5, top: 773, width: 1939.5, height: 319, pointerEvents: 'none' }}>
+        <svg width="1939.5" height="319" viewBox="0 0 1939.5 319" style={{ display: 'block' }}>
+          <defs>
+            <linearGradient id="footerInnerShadow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="rgba(0,0,0,0.09)" />
+              <stop offset="40%" stopColor="rgba(0,0,0,0)" />
+            </linearGradient>
+          </defs>
+          {/* Main fill */}
+          <path
+            d="M 0 0 L 305.147 0
+               C 352.636 0 410.936 0 480.96 59.511
+               C 528.955 100.3 573.918 125.992 661.319 125.992
+               L 968.992 125.992 L 970.508 125.992
+               L 1278.181 125.992
+               C 1365.582 125.992 1410.545 100.3 1458.54 59.511
+               C 1528.564 0 1586.864 0 1634.353 0
+               L 1939.5 0 L 1939.5 319
+               L 970.508 319 L 968.992 319
+               L 0 319 L 0 0 Z"
+            fill={C.footerFill}
+            stroke="rgb(54,191,237)"
+            strokeWidth={5}
+          />
+          {/* Inner shadow overlay */}
+          <path
+            d="M 0 0 L 305.147 0
+               C 352.636 0 410.936 0 480.96 59.511
+               C 528.955 100.3 573.918 125.992 661.319 125.992
+               L 968.992 125.992 L 970.508 125.992
+               L 1278.181 125.992
+               C 1365.582 125.992 1410.545 100.3 1458.54 59.511
+               C 1528.564 0 1586.864 0 1634.353 0
+               L 1939.5 0 L 1939.5 160
+               L 0 160 Z"
+            fill="url(#footerInnerShadow)"
+            style={{ pointerEvents: 'none' }}
+          />
+        </svg>
+      </div>
+
+      {/* Top separator line */}
+      <div style={{
+        position: 'absolute', left: 0, top: 773,
+        width: W, height: 4,
+        backgroundColor: 'rgb(32,32,32)',
+        opacity: 0.18,
+      }} />
+
+      {/* Date / time — Figma: top 897, shifted down slightly per review */}
+      <div style={{
+        position: 'absolute',
+        left: 0, top: 930,
+        width: W,
+        textAlign: 'center',
+        fontFamily: FONT,
+        fontSize: 66,
+        fontWeight: 400,
+        color: C.dateGray,
+        lineHeight: 1,
+        letterSpacing: '0.01em',
+      }}>
+        {dateStr}
+      </div>
+
+      {/* ── Left side panel (Wii button) ── */}
+      <div style={{
+        position: 'absolute',
+        left: -40, top: 811,
+        width: 330, height: 200,
+        borderRadius: '0 100px 100px 0',
+        backgroundColor: C.btnSilver,
+        border: `8px solid ${C.btnBorder}`,
+        boxShadow: 'inset -10px -26px 20px 0px rgba(255,255,255,0.7), inset 0 0 0 0 rgb(217,217,217)',
+        pointerEvents: 'auto',
+        cursor: 'pointer',
+      }}>
+        <div style={{ position: 'absolute', left: 130, top: 1 }}>
+          <CircButton>
+            <svg xmlns="http://www.w3.org/2000/svg" width="83" height="40" viewBox="0 0 82.747 40"
+              style={{ position: 'absolute', left: 40, top: 61, opacity: 0.55 }}>
+              <path d="M 45.209 2.192 L 38.223 29.873 C 38.223 29.873 32.881 9.095 32.012 6.147 C 31.142 3.195 29.354 1.902 26.817 1.902 C 24.28 1.902 22.488 3.195 21.619 6.147 C 20.753 9.095 15.41 29.873 15.41 29.873 L 8.419 2.192 L 0 2.192 C 0 2.192 8.086 31.726 9.185 35.148 C 10.039 37.817 12.065 40 15.067 40 C 18.5 40 20.105 37.471 20.848 35.148 C 21.583 32.838 26.817 13.331 26.817 13.331 C 26.817 13.331 32.051 32.838 32.784 35.148 C 33.527 37.471 35.133 40 38.564 40 C 41.569 40 43.59 37.818 44.451 35.148 C 45.547 31.727 53.627 2.192 53.627 2.192 Z M 74.074 39.715 L 82.044 39.715 L 82.044 13.663 L 74.074 13.663 Z M 73.302 4.554 C 73.302 7.065 75.398 9.103 77.972 9.103 C 80.65 9.103 82.747 7.107 82.747 4.554 C 82.747 2.001 80.65 0 77.972 0 C 75.398 0 73.302 2.041 73.302 4.554 Z M 57.88 39.715 L 65.847 39.715 L 65.847 13.663 L 57.88 13.663 Z M 57.105 4.554 C 57.105 7.065 59.197 9.103 61.772 9.103 C 64.449 9.103 66.55 7.107 66.55 4.554 C 66.55 2.001 64.449 0 61.772 0 C 59.197 0 57.105 2.041 57.105 4.554 Z" fill="rgb(140,140,144)"/>
+            </svg>
+          </CircButton>
+        </div>
+      </div>
+
+      {/* ── Right side panel (Envelope button) ── */}
+      <div style={{
+        position: 'absolute',
+        left: 1630, top: 811,
+        width: 330, height: 200,
+        borderRadius: '100px 0 0 100px',
+        backgroundColor: C.btnSilver,
+        border: `8px solid ${C.btnBorder}`,
+        boxShadow: 'inset 10px -26px 20px 0px rgba(255,255,255,0.7)',
+        pointerEvents: 'auto',
+        cursor: 'pointer',
+      }}>
+        <div style={{ position: 'absolute', left: 38, top: 1 }}>
+          <CircButton>
+            <svg
+              width={96} height={64} viewBox="0 0 96 64"
+              style={{ position: 'absolute', left: 33, top: 49, zIndex: 5 }}
+            >
+              {/* Flap (top of envelope) */}
+              <path
+                d="M 0 4 L 0 12 L 46.681 34.854 C 47.513 35.262 48.487 35.262 49.319 34.854 L 96 12 L 96 4 C 96 1.791 94.209 0 92 0 L 4 0 C 1.791 0 0 1.791 0 4 Z"
+                fill="rgb(162,162,162)"
+              />
+              {/* Body (bottom of envelope) */}
+              <path
+                d="M 46.658 43.829 L 0 20.5 L 0 60 C 0 62.209 1.791 64 4 64 L 92 64 C 94.209 64 96 62.209 96 60 L 96 20.5 L 49.342 43.829 C 48.497 44.251 47.503 44.251 46.658 43.829 Z"
+                fill="rgb(162,162,162)"
+              />
+            </svg>
+          </CircButton>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Wii cursor — exact asset from Figma Buttons/Wii-Cursor
+// White hand body (gradient) + black outline + blue Union pointer
+// Frame: 228×362, displayed at 80×127 (scale ≈ 0.351)
+// ─────────────────────────────────────────
+const CURSOR_HAND_PATH = "M 183.824 123.667 C 179.533 123.667 175.419 125.373 172.385 128.41 C 169.351 131.447 167.647 135.566 167.647 139.861 L 167.647 145.249 C 167.647 145.773 167.439 146.274 167.07 146.644 C 166.7 147.014 166.199 147.222 165.676 147.222 L 163.735 147.222 C 163.213 147.222 162.711 147.014 162.342 146.644 C 161.972 146.274 161.765 145.773 161.765 145.249 L 161.765 131.028 C 161.765 126.733 160.06 122.614 157.027 119.577 C 153.993 116.54 149.878 114.833 145.588 114.833 C 141.298 114.833 137.183 116.54 134.15 119.577 C 131.116 122.614 129.412 126.733 129.412 131.028 L 129.412 145.249 C 129.412 145.509 129.361 145.765 129.262 146.004 C 129.163 146.244 129.018 146.461 128.835 146.644 C 128.652 146.828 128.434 146.973 128.195 147.072 C 127.956 147.171 127.7 147.222 127.441 147.222 L 122.559 147.222 C 122.3 147.222 122.044 147.171 121.805 147.072 C 121.566 146.973 121.348 146.828 121.165 146.644 C 120.982 146.461 120.837 146.244 120.738 146.004 C 120.639 145.765 120.588 145.509 120.588 145.249 L 120.588 123.667 C 120.588 118.981 118.729 114.488 115.42 111.174 C 112.11 107.861 107.621 106 102.941 106 C 98.261 106 93.772 107.861 90.463 111.174 C 87.153 114.488 85.294 118.981 85.294 123.667 L 85.294 145.191 C 85.294 145.729 85.08 146.246 84.7 146.627 C 84.319 147.008 83.803 147.222 83.265 147.222 L 78.5 147.222 C 78.233 147.222 77.97 147.17 77.723 147.068 C 77.477 146.965 77.253 146.816 77.065 146.627 C 76.877 146.439 76.727 146.215 76.625 145.968 C 76.523 145.722 76.471 145.457 76.471 145.191 L 76.471 22.083 C 76.471 16.226 74.147 10.609 70.01 6.468 C 65.873 2.327 60.262 0 54.412 0 C 48.561 0 42.951 2.327 38.814 6.468 C 34.677 10.609 32.353 16.226 32.353 22.083 L 32.353 192.361 C 32.353 192.62 32.302 192.876 32.203 193.116 C 32.104 193.355 31.959 193.572 31.776 193.756 C 31.593 193.939 31.376 194.084 31.136 194.183 C 30.897 194.282 30.641 194.333 30.382 194.333 L 25.5 194.333 C 24.977 194.333 24.476 194.126 24.107 193.756 C 23.737 193.386 23.529 192.884 23.529 192.361 L 23.529 155.025 C 23.529 154.517 23.328 154.031 22.969 153.672 C 22.611 153.313 22.125 153.111 21.618 153.111 C 15.884 153.111 10.386 155.391 6.332 159.45 C 2.278 163.508 0 169.013 0 174.753 L 0 226.722 C 0 267.944 52.941 273.833 52.941 303.278 L 52.941 316 C 52.941 317.105 53.837 318 54.941 318 L 171.529 318 C 172.634 318 173.529 317.105 173.529 316 L 173.529 300.333 C 173.529 273.833 200 273.833 200 250.278 L 200 139.861 C 200 135.566 198.296 131.447 195.262 128.41 C 192.228 125.373 188.114 123.667 183.824 123.667 Z";
+
+// Blue Union pointer path (from Buttons/Wii-Cursor JSX: left:101, top:189 in 228×362 frame)
+const CURSOR_POINTER_PATH = "M 41 0 L 0 0 L 0 31.714 L 15.769 31.714 L 15.769 111 L 41 111 L 41 0 Z";
+
+function WiiCursor({ x, y, tilt }) {
+  // Cursor tip is at ~(54px, 0px) within the 200×318 hand path
+  // In 228×362 frame that's (14+54, 22+0) = (68, 22)
+  // At display scale 80/228 ≈ 0.351: tip offset = (68*0.351, 22*0.351) ≈ (24, 8)
+  return (
+    <div style={{
+      position: 'absolute',
+      left: x - 24,
+      top: y - 8,
+      width: 80, height: 127,
+      pointerEvents: 'none',
+      zIndex: 9999,
+      transform: `rotate(${tilt}deg)`,
+      transformOrigin: '24px 8px',
+      transition: 'transform 0.18s ease-out',
+      filter: 'drop-shadow(5px 6px 2px rgba(0,0,0,0.3))',
+    }}>
+      {/* SVG cursor — viewBox matches full 228×362 Figma frame, scaled to 80×127 */}
+      <svg width={80} height={127} viewBox="0 0 228 362">
+        <defs>
+          <linearGradient id="cursorBodyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stopColor="rgb(255,255,255)" />
+            <stop offset="56%"  stopColor="rgb(255,255,255)" />
+            <stop offset="100%" stopColor="rgb(158,211,255)" />
+          </linearGradient>
+        </defs>
+
+        {/* Hand body — translated to match img position (left:14, top:22) in frame */}
+        <g transform="translate(14,22)">
+          {/* Black outline rendered beneath fill using paint-order */}
+          <path
+            d={CURSOR_HAND_PATH}
+            fill="url(#cursorBodyGrad)"
+            stroke="rgb(0,0,0)"
+            strokeWidth={13}
+            strokeLinejoin="round"
+            paintOrder="stroke fill"
+          />
+        </g>
+
+        {/* Blue Union pointer — left:101, top:189 in the 228×362 frame */}
+        <g transform="translate(101,189)">
+          <path d={CURSOR_POINTER_PATH} fill="rgb(0,140,255)" />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Pill button (sub-screen navigation)
+// ─────────────────────────────────────────
+function PillButton({ label, onClick }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      onClick={onClick}
+      style={{
+        width: 546, height: 148,
+        borderRadius: 170,
+        backgroundColor: 'rgb(227,232,239)',
+        border: `4px solid ${C.cyan}`,
+        boxShadow: hov
+          ? `inset 0px -10px 19px 16px rgb(177,188,202), inset 10px 9px 60px 0px #fff, 0 0 55px 0px ${C.cyan}`
+          : 'inset 0px -10px 19px 16px rgb(177,188,202), inset 10px 9px 60px 0px #fff',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer',
+        transition: 'box-shadow 0.15s ease',
+      }}
+    >
+      <span style={{ fontFamily: FONT, fontSize: 59, fontWeight: 500, color: C.textDark }}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Henry Mii CSS character
+// ─────────────────────────────────────────
+function HenryMii({ width = 100, height = 170 }) {
+  return (
+    <svg width={width} height={height} viewBox="0 0 100 170" style={{ overflow: 'visible' }}>
+      {/* Arms behind body */}
+      <path d="M 14 102 Q 4 118 7 136 L 18 133 Q 15 118 22 106 Z" fill="#2d2d3a" />
+      <path d="M 86 102 Q 96 118 93 136 L 82 133 Q 85 118 78 106 Z" fill="#2d2d3a" />
+      <ellipse cx="10" cy="138" rx="8" ry="7" fill="#ffdab3" />
+      <ellipse cx="90" cy="138" rx="8" ry="7" fill="#ffdab3" />
+
+      {/* Body — dark blazer */}
+      <path d="M 14 102 Q 18 96 42 96 L 50 106 L 58 96 Q 82 96 86 102 L 90 150 L 10 150 Z" fill="#2d2d3a" />
+      {/* White shirt collar */}
+      <path d="M 42 96 L 50 106 L 58 96 L 58 102 L 50 112 L 42 102 Z" fill="white" />
+      {/* Lapels */}
+      <path d="M 40 98 L 50 110 L 43 122 L 28 108 Z" fill="#3a3a4a" />
+      <path d="M 60 98 L 50 110 L 57 122 L 72 108 Z" fill="#3a3a4a" />
+
+      {/* Legs */}
+      <rect x="26" y="148" width="20" height="18" rx="5" fill="#252535" />
+      <rect x="54" y="148" width="20" height="18" rx="5" fill="#252535" />
+      <ellipse cx="36" cy="168" rx="13" ry="5" fill="#181825" />
+      <ellipse cx="64" cy="168" rx="13" ry="5" fill="#181825" />
+
+      {/* Hair base behind head */}
+      <ellipse cx="50" cy="44" rx="29" ry="22" fill="#4a2c17" />
+
+      {/* Head */}
+      <rect x="24" y="40" width="52" height="52" rx="18" fill="#ffdab3" />
+
+      {/* Ears */}
+      <ellipse cx="24" cy="67" rx="6" ry="9" fill="#ffdab3" />
+      <ellipse cx="76" cy="67" rx="6" ry="9" fill="#ffdab3" />
+
+      {/* Hair front overlapping head */}
+      <ellipse cx="50" cy="42" rx="27" ry="14" fill="#4a2c17" />
+      <rect x="23" y="40" width="10" height="24" rx="5" fill="#4a2c17" />
+      <rect x="67" y="40" width="10" height="24" rx="5" fill="#4a2c17" />
+      {/* Messy front strands */}
+      <path d="M 42 44 C 44 32 53 32 54 42" fill="#4a2c17" />
+      <path d="M 37 47 C 39 35 46 35 48 44" fill="#4a2c17" />
+
+      {/* Neck */}
+      <rect x="42" y="90" width="16" height="10" fill="#ffdab3" />
+
+      {/* Eyebrows */}
+      <path d="M 33 62 Q 38 58 43 62" stroke="#3d2008" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+      <path d="M 57 62 Q 62 58 67 62" stroke="#3d2008" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+
+      {/* Eyes */}
+      <ellipse cx="38" cy="69" rx="7" ry="6" fill="white" />
+      <ellipse cx="62" cy="69" rx="7" ry="6" fill="white" />
+      <ellipse cx="38" cy="70" rx="4.5" ry="4.5" fill="#5b9e8f" />
+      <ellipse cx="62" cy="70" rx="4.5" ry="4.5" fill="#5b9e8f" />
+      <ellipse cx="38.5" cy="70.5" rx="2.2" ry="2.5" fill="#1a1a1a" />
+      <ellipse cx="62.5" cy="70.5" rx="2.2" ry="2.5" fill="#1a1a1a" />
+      <ellipse cx="40" cy="68.5" rx="1.1" ry="1.3" fill="rgba(255,255,255,0.85)" />
+      <ellipse cx="64" cy="68.5" rx="1.1" ry="1.3" fill="rgba(255,255,255,0.85)" />
+
+      {/* Nose */}
+      <path d="M 47 77 Q 50 80 53 77" stroke="#d4956b" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+
+      {/* Mouth */}
+      <path d="M 41 84 Q 50 92 59 84" stroke="#c06850" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+
+      {/* Cheek blush */}
+      <ellipse cx="31" cy="76" rx="6" ry="4" fill="rgba(255,160,130,0.25)" />
+      <ellipse cx="69" cy="76" rx="6" ry="4" fill="rgba(255,160,130,0.25)" />
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────
+// About Mii — Mii Plaza environment
+// ─────────────────────────────────────────
+function AboutMiiPanel({ onClose }) {
+  return (
+    <div style={{
+      position: 'absolute', left: 0, top: 0, width: W, height: H,
+      zIndex: 50, overflow: 'hidden',
+      animation: 'tileAppear 0.25s ease both',
+    }}>
+
+
+      {/* ── Sky — lighter at horizon, deeper at top ── */}
+      <div style={{
+        position: 'absolute', left: 0, top: 0, width: W, height: 700,
+        background: 'linear-gradient(180deg, rgb(68,138,208) 0%, rgb(120,186,238) 30%, rgb(186,224,252) 65%, rgb(228,244,255) 100%)',
+      }} />
+
+      {/* ── Horizon atmospheric haze — sky blends into floor ── */}
+      <div style={{
+        position: 'absolute', left: 0, top: 610, width: W, height: 100,
+        background: 'linear-gradient(180deg, transparent 0%, rgba(235,248,255,0.82) 100%)',
+        pointerEvents: 'none', zIndex: 2,
+      }} />
+
+      {/* ── Perspective tile floor ── */}
+      <div style={{
+        position: 'absolute', left: 0, top: 658, width: W, height: 440,
+        overflow: 'hidden',
+      }}>
+        {/* Horizon fade at very top of floor section */}
+        <div style={{
+          position: 'absolute', left: 0, top: 0, width: '100%', height: 72,
+          background: 'linear-gradient(180deg, rgb(228,244,255) 0%, transparent 100%)',
+          zIndex: 2, pointerEvents: 'none',
+        }} />
+        {/* Real Mii Plaza iridescent floor sprite */}
+        <img
+          src="Wii - Mii Channel - Miscellaneous - Mii Plaza.png"
+          alt=""
+          style={{
+            position: 'absolute', left: 0, top: 0,
+            width: '100%', height: '100%',
+            objectFit: 'cover',
+            objectPosition: '0% 80%',
+          }}
+        />
+        {/* Gradient to hide right-side UI elements on the sheet */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+          background: 'linear-gradient(90deg, transparent 0%, transparent 58%, rgb(228,244,255) 78%)',
+        }} />
+        {/* Side edge fades */}
+        <div style={{
+          position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none',
+          background: 'linear-gradient(90deg, rgb(228,244,255) 0%, transparent 12%, transparent 100%)',
+        }} />
+      </div>
+
+      {/* ── Grass strip ── */}
+      <div style={{
+        position: 'absolute', left: 0, bottom: 0, width: W, height: 92,
+        background: 'linear-gradient(180deg, rgb(108,192,66) 0%, rgb(82,158,48) 100%)',
+      }} />
+      {/* Grass top highlight edge */}
+      <div style={{
+        position: 'absolute', left: 0, bottom: 90, width: W, height: 6,
+        background: 'linear-gradient(90deg, rgb(125,210,82), rgb(145,225,98), rgb(125,210,82))',
+        opacity: 0.85,
+      }} />
+
+      {/* ── Wii Menu button ── */}
+      <div style={{
+        position: 'absolute', bottom: 28, left: 0, width: W,
+        display: 'flex', justifyContent: 'center', zIndex: 10,
+      }}>
+        <PillButton label="Wii Menu" onClick={onClose} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Channel grid — 4 cols × 3 rows
+// ─────────────────────────────────────────
+const CHANNELS = [
+  { id: 0 }, { id: 1 }, { id: 2 }, { id: 3 },
+  { id: 4 }, { id: 5 }, { id: 6 }, { id: 7 },
+  { id: 8 }, { id: 9 }, { id: 10 }, { id: 11 },
+];
+
+function ChannelGrid({ onOpen }) {
+  return (
+    <div style={{
+      position: 'absolute',
+      left: 165, top: 83,
+      display: 'grid',
+      gridTemplateColumns: 'repeat(4, 392px)',
+      gridTemplateRows: 'repeat(3, 217px)',
+      gap: 11,
+    }}>
+      {CHANNELS.map((ch, i) => {
+        if (i === 0) return (
+          <ChannelTile
+            key={ch.id}
+            delay={i * 30}
+            bgColor="rgb(100,168,224)"
+            borderColor="rgb(68,130,195)"
+            onClick={() => onOpen('about')}
+          >
+            <div style={{
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', justifyContent: 'space-between',
+              height: '100%', paddingTop: 10, paddingBottom: 14,
+            }}>
+              <HenryMii width={84} height={143} />
+              <span style={{
+                fontFamily: FONT, fontSize: 22, fontWeight: 700,
+                color: 'rgba(255,255,255,0.95)',
+                textShadow: '0 1px 4px rgba(0,50,120,0.4)',
+                letterSpacing: '0.01em',
+              }}>
+                About Mii
+              </span>
+            </div>
+          </ChannelTile>
+        );
+        return <ChannelTile key={ch.id} delay={i * 30} />;
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────
+// Root App
+// ─────────────────────────────────────────
+function App() {
+  const [scale, setScale]   = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [cursor, setCursor] = useState({ x: 960, y: 400 });
+  const [tilt, setTilt]     = useState(0);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const [openChannel, setOpenChannel] = useState(null);
+  const prevX = useRef(960);
+  const tiltTarget = useRef(0);
+  const animFrame = useRef(null);
+
+  // Date string
+  const now  = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const dateStr = `${days[now.getDay()]} ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}`;
+
+  // Responsive scaling
+  useEffect(() => {
+    const update = () => {
+      const s  = Math.min(window.innerWidth / W, window.innerHeight / H);
+      const ox = (window.innerWidth  - W * s) / 2;
+      const oy = (window.innerHeight - H * s) / 2;
+      setScale(s);
+      setOffset({ x: ox, y: oy });
+    };
+    update();
+    window.addEventListener('resize', update);
+    return () => window.removeEventListener('resize', update);
+  }, []);
+
+  // Mouse tracking (translate to canvas coords + subtle tilt)
+  useEffect(() => {
+    const onMove = (e) => {
+      const x = (e.clientX - offset.x) / scale;
+      const y = (e.clientY - offset.y) / scale;
+      setCursor({ x, y });
+
+      const dx = x - prevX.current;
+      tiltTarget.current = Math.max(-18, Math.min(18, dx * 0.6));
+      prevX.current = x;
+    };
+
+    // Smooth tilt animation
+    const animate = () => {
+      setTilt(prev => {
+        const diff = tiltTarget.current - prev;
+        return Math.abs(diff) < 0.1 ? tiltTarget.current : prev + diff * 0.12;
+      });
+      animFrame.current = requestAnimationFrame(animate);
+    };
+    animFrame.current = requestAnimationFrame(animate);
+
+    window.addEventListener('mousemove', onMove);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      cancelAnimationFrame(animFrame.current);
+    };
+  }, [scale, offset]);
+
+  return (
+    <div style={{
+      width: '100vw', height: '100vh',
+      overflow: 'hidden',
+      background: '#0d0d0d',
+      position: 'relative',
+    }}>
+      {/* Scaled canvas */}
+      <div style={{
+        position: 'absolute',
+        left: offset.x,
+        top: offset.y,
+        width: W,
+        height: H,
+        transform: `scale(${scale})`,
+        transformOrigin: '0 0',
+        backgroundColor: C.bg,
+        overflow: 'hidden',
+        fontFamily: FONT,
+      }}>
+
+        {/* ── Background stripe texture (top band) ── */}
+        <Stripes style={{
+          position: 'absolute',
+          left: 0, top: -8,
+          width: W, height: 185,
+        }} />
+        {/* Fade the stripes into the bg */}
+        <div style={{
+          position: 'absolute',
+          left: 0, top: -8,
+          width: W, height: 185,
+          background: `linear-gradient(180deg, rgba(242,242,242,0.1) 0%, ${C.bg} 100%)`,
+          pointerEvents: 'none',
+        }} />
+
+        {/* ── Channel grid ── */}
+        <ChannelGrid onOpen={setOpenChannel} />
+
+        {/* ── Navigation arrows ── right always visible; left only after first scroll ── */}
+        <NavArrow dir="right" visible={true}  onClick={() => setHasScrolled(true)} />
+        <NavArrow dir="left"  visible={hasScrolled} onClick={() => {}} />
+
+        {/* ── Footer ── */}
+        <Footer dateStr={dateStr} />
+
+        {/* ── Channel panels ── */}
+        {openChannel === 'about' && <AboutMiiPanel onClose={() => setOpenChannel(null)} />}
+
+        {/* ── Cursor ── */}
+        <WiiCursor x={cursor.x} y={cursor.y} tilt={tilt} />
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+*.local
+
+# Env & secrets (never commit real values)
+.env
+.env.*
+!.env.example
+
+# Logs & cache
+*.log
+npm-debug.log*
+.vite/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Test / coverage
+coverage/
+
+# Optional local tooling
+*.swp
+*.swo
+
+# — Not needed to build the Vite app (keep locally; don’t ship in public repo) —
+*.blend
+*.blend1
+*.zip
+*.smd
+*.dae
+Mii/
+Mii Plaza.html
+/floor-quarter.png
+Screenshot*.png
+*mii-data*.glb
+Mii_Maker_for_4.1_v2.blend
+2026-04-23_19-36-56-mii-data.glb
+Wii - Mii Channel - Mii - Body.zip
+Wii - Mii Channel - Mii - Body/
+Wii - Mii Channel - Miscellaneous - Mii Plaza.png
+Wii - Wii Party - Mii - Mii.zip
