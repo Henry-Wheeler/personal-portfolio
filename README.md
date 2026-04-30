@@ -1,6 +1,6 @@
-# Wii Codex
+# Personal Portfolio
 
-Wii Menu–inspired portfolio UI: React, Vite, and a Three.js “About Mii” channel with a rigged Mii-style character.
+Wii Menu–inspired UI: React, Vite, and a Three.js “About Mii” channel with a rigged Mii-style character.
 
 ## Run locally
 
