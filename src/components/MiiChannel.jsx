@@ -779,6 +779,7 @@ function BackgroundMii({
   const mixerRef = useRef(null)
   const bodySkeletonRef = useRef(null)
   const frameBudgetRef = useRef(0)
+  const [renderReady, setRenderReady] = useState(false)
 
   const preparedBodyScene = useMemo(() => {
     if (!bodySourceScene) return null
@@ -842,6 +843,10 @@ function BackgroundMii({
   }, [preparedBodyScene])
 
   useEffect(() => {
+    setRenderReady(false)
+  }, [preparedBodyScene, headUrl])
+
+  useEffect(() => {
     if (!headUrl) return
     const headBone = bodyBones?.head
     if (!headBone || !backgroundHeadScene) return
@@ -857,10 +862,17 @@ function BackgroundMii({
   }, [bodyBones, backgroundHeadScene, headUrl, headOffset, headScale, scale])
 
   useEffect(() => {
-    if (!preparedBodyScene || !animations?.length) return
+    if (!preparedBodyScene || !animations?.length) {
+      setRenderReady(!!preparedBodyScene)
+      return
+    }
     const rawIdle = animations.find((a) => a.name === 'Idle')
-    if (!rawIdle) return
+    if (!rawIdle) {
+      setRenderReady(true)
+      return
+    }
 
+    let cancelled = false
     const mixer = new THREE.AnimationMixer(preparedBodyScene)
     const idleClip = deformClip(rawIdle, ARM_BONES_SET)
     const idleAction = mixer.clipAction(idleClip)
@@ -868,14 +880,22 @@ function BackgroundMii({
     const phase = backgroundIdlePhaseOffset(position, rotationY)
     idleAction.time = phase * Math.max(0.001, idleClip.duration)
     idleAction.play()
+    mixer.update(0)
+    Object.entries(ARM_DOWN_QUATERNIONS).forEach(([name, q]) => {
+      const bone = bodyBones?.[name]
+      if (bone) bone.quaternion.copy(q)
+    })
+    bodySkeletonRef.current?.update()
+    if (!cancelled) setRenderReady(true)
     mixerRef.current = mixer
 
     return () => {
+      cancelled = true
       mixer.stopAllAction()
       mixer.uncacheRoot(preparedBodyScene)
       mixerRef.current = null
     }
-  }, [preparedBodyScene, animations, position, rotationY])
+  }, [preparedBodyScene, animations, position, rotationY, bodyBones])
 
   useFrame((_state, delta) => {
     if (!groupRef.current) return
@@ -900,7 +920,7 @@ function BackgroundMii({
   const finalScale = scale * BODY_SCALE * perspectiveComp * bodyScaleMul
 
   return (
-    <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>
+    <group ref={groupRef} position={position} rotation={[0, rotationY, 0]} visible={renderReady}>
       <mesh rotation={[-Math.PI / 2 + 0.4, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[1.1, 1.1]} />
         <meshBasicMaterial alphaMap={shadowTexture} transparent opacity={0.45} color={0x000000} depthWrite={false} />
@@ -930,6 +950,7 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
   const wavingRef             = useRef(false) // true while wave action is playing
   /** Walk-in stride sign; used to fire left/right footstep SFX on zero crossings. */
   const prevStrideRef         = useRef(null)
+  const [renderReady, setRenderReady] = useState(false)
   callbackRef.current = onArrived
 
 
@@ -976,6 +997,10 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
     return headScene
   }, [headScene])
 
+  useEffect(() => {
+    setRenderReady(false)
+  }, [processedBody, processedHead])
+
   // Parent mii.glb to the skeleton's 'head' joint so it follows all animations.
   // processedHead lives inside bodyScene (rendered at BODY_SCALE=1.7), so scale
   // must be UNIT_SCALE / BODY_SCALE. Position -0.075 keeps the visual position
@@ -1009,7 +1034,10 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
   // AnimationMixer — full sequence:
   //   walk-in (manual legs) → wave once → arms slerp to rest → idle → look around every 5s
   useEffect(() => {
-    if (!bodyScene || !animations?.length) return
+    if (!bodyScene || !animations?.length) {
+      setRenderReady(!!bodyScene)
+      return
+    }
 
     const mixer   = new THREE.AnimationMixer(bodyScene)
     const rawIdle = animations.find(a => a.name === 'Idle')
@@ -1069,6 +1097,13 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
     }
     mixer.addEventListener('finished', onFinished)
     mixerRef.current = mixer
+    mixer.update(0)
+    Object.entries(ARM_DOWN_QUATERNIONS).forEach(([name, restQ]) => {
+      const bone = bodyNodes?.[name]
+      if (bone) bone.quaternion.copy(restQ)
+    })
+    bodySkeletonRef.current?.update()
+    setRenderReady(true)
 
     return () => {
       clearTimeout(idleTimerRef.current)
@@ -1082,8 +1117,9 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
       lookAroundActiveRef.current = false
       armRestoringRef.current     = false
       wavingRef.current           = false
+      setRenderReady(false)
     }
-  }, [bodyScene, animations])
+  }, [bodyScene, animations, bodyNodes])
 
   useFrame(({ clock, camera, size }, delta) => {
     if (!groupRef.current) return
@@ -1221,7 +1257,7 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} visible={renderReady}>
       <mesh rotation={[-Math.PI / 2 + 0.4, 0, 0]} position={[0, -0.02, 0]}>
         <planeGeometry args={[1.1, 1.1]} />
         <meshBasicMaterial alphaMap={shadowTexture} transparent opacity={0.45} color={0x000000} depthWrite={false} />

@@ -8,9 +8,20 @@ import Footer from './components/Footer'
 import MiiChannel from './components/MiiChannel'
 import WiiCursor from './components/WiiCursor'
 
+function getViewportFit() {
+  if (typeof window === 'undefined') {
+    return { scale: 1, offset: { x: 0, y: 0 } }
+  }
+  const s = Math.min(window.innerWidth / W, window.innerHeight / H)
+  const ox = (window.innerWidth - W * s) / 2
+  const oy = (window.innerHeight - H * s) / 2
+  return { scale: s, offset: { x: ox, y: oy } }
+}
+
 export default function App() {
-  const [scale, setScale]   = useState(1)
-  const [offset, setOffset] = useState({ x: 0, y: 0 })
+  const initialFit = getViewportFit()
+  const [scale, setScale]   = useState(initialFit.scale)
+  const [offset, setOffset] = useState(initialFit.offset)
   const [cursor, setCursor] = useState({ x: 960, y: 400 })
   const [tilt, setTilt]     = useState(0)
   const [hasScrolled, setHasScrolled] = useState(false)
@@ -29,13 +40,10 @@ export default function App() {
 
   useEffect(() => {
     const update = () => {
-      const s  = Math.min(window.innerWidth / W, window.innerHeight / H)
-      const ox = (window.innerWidth  - W * s) / 2
-      const oy = (window.innerHeight - H * s) / 2
-      setScale(s)
-      setOffset({ x: ox, y: oy })
+      const fit = getViewportFit()
+      setScale(fit.scale)
+      setOffset(fit.offset)
     }
-    update()
     window.addEventListener('resize', update)
     return () => window.removeEventListener('resize', update)
   }, [])
