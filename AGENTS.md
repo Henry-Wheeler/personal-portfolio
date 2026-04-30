@@ -25,7 +25,7 @@ Product direction — **update this section when plans change.** Implementation 
 
 ### About Mii channel (extras)
 
-- **Background Miis:** a **few** additional figures in **idle** at different positions/angles so the plaza feels fuller (not a crowd). Prototype when ready; mind **perf** (extra GLBs vs simpler placeholders).
+- **Background Miis:** a **few** additional figures in **idle** at different positions/angles so the plaza feels fuller (not a crowd). **Prototype now in `MiiChannel.jsx`:** 2 extras (1 female + 1 male) from `/assets/miiBody.glb` (`torso_f_weights` / `torso_m_weights`) assigned to an expanded **curated slot pool** (includes occasional backward-facing slots) with per-open shuffle. Background loader hides non-skinned helper meshes in a synchronous prep pass (prevents first-frame flash junk).
 
 ### UI / audio polish
 
@@ -172,6 +172,7 @@ The "About Mii" channel panel. Uses `framer-motion` for the thought-bubble entra
 - Head (`/mii.glb`) parented to `head` bone; Mii Plaza floor canvas; **thought-bubble** UI + typewriter; drop shadow plane under character.
 - **Thought bubble (Wii Sports–style):** `ABOUT_SENTENCES` array — short, scannable lines (intro, majors, grad date, work/build, interests, sign-off). **One sentence per beat** with fixed SVG cloud size (no vertical grow-as-you-type). **Typewriter:** variable timing (`TYPEWRITER_MS_PER_CHAR` + extra pause on `,.;:!?`). **Tail:** three separate circles (large → small) from cloud bottom-left; **smallest circle** is the anchor. **`MiiModel`** each `useFrame` (while bubble visible) projects `bodyNodes.head` + `THOUGHT_HEAD_LOCAL_OFFSET`, then adds `MII_CANVAS_TRANSLATE_X` + `THOUGHT_HEAD_SCREEN_NUDGE_X/Y` so HTML aligns with the CSS-shifted `<Canvas>`. Writes **`headBubbleScreenRef`**; **`SpeechBubble`** polls ~32 ms and only re-renders when the point moves. Fallback `THOUGHT_HEAD_FALLBACK_*` until first sample.
 - **Canvas / HTML sync:** `MII_CANVAS_TRANSLATE_X` constant must match `translateX` on `<Canvas>` and the `+ MII_CANVAS_TRANSLATE_X` in the projection math.
+- **Background extras:** `BACKGROUND_SLOT_POOL` + `BACKGROUND_CHARACTER_VARIANTS` feed randomized (shuffled) but safe placements; `BackgroundMii` supports optional `headUrl`, `headOffset`, and `headScale` for future face swaps.
 
 **Resolved:** Wave hand vs head clipping is no longer an issue in the current setup.
 
@@ -270,6 +271,8 @@ ENTRY_Z = -8.5            // start Z when mode is 'depth'
 WALK_DURATION = 3.2
 MII_BASE_X = 0
 MII_BASE_Z = 0.35
+BACKGROUND_SLOT_POOL // curated safe transforms for background extras
+BACKGROUND_CHARACTER_VARIANTS // body mesh + future head contract
 ```
 Camera (Canvas): `position: [0, 1.8, 6.0]`, `fov: 48`. `CameraAim` (lookAt tweak) is only mounted when `WALK_ENTRY_MODE === 'depth'`. The R3F `<Canvas>` uses `transform: translateX(${MII_CANVAS_TRANSLATE_X}px)` (same constant as projection).
 

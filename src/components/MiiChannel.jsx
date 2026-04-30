@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
+import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js'
 import { W, H, FONT } from '../constants'
 import PillButton from './PillButton'
 import {
@@ -358,8 +359,13 @@ function disposeOutfitMaterials(mat) {
   list.forEach((m) => m?.dispose?.())
 }
 
-function applyOutfitWaistShader(skinnedMesh) {
-  if (skinnedMesh.userData.outfitPipelineVersion === OUTFIT_PIPELINE_VERSION) return
+function applyOutfitWaistShader(skinnedMesh, options = {}) {
+  const shirtHex = options.shirtHex ?? OUTFIT_SHIRT_HEX
+  const pantsHex = options.pantsHex ?? OUTFIT_PANTS_HEX
+  const waistFrac = options.waistHeightFrac ?? OUTFIT_WAIST_HEIGHT_FRAC
+  const waistSoftness = options.waistSoftness ?? OUTFIT_WAIST_SOFTNESS
+  const pipelineKey = `${OUTFIT_PIPELINE_VERSION}:${shirtHex}:${pantsHex}:${waistFrac}:${waistSoftness}`
+  if (skinnedMesh.userData.outfitPipelineKey === pipelineKey) return
 
   const geo = skinnedMesh.geometry
   const pos = geo.getAttribute('position')
@@ -372,12 +378,12 @@ function applyOutfitWaistShader(skinnedMesh) {
     if (y < minY) minY = y
     if (y > maxY) maxY = y
   }
-  const waistY = minY + Math.max(1e-6, maxY - minY) * OUTFIT_WAIST_HEIGHT_FRAC
+  const waistY = minY + Math.max(1e-6, maxY - minY) * waistFrac
 
   disposeOutfitMaterials(skinnedMesh.material)
 
-  const shirtCol = new THREE.Color(OUTFIT_SHIRT_HEX)
-  const pantsCol = new THREE.Color(OUTFIT_PANTS_HEX)
+  const shirtCol = new THREE.Color(shirtHex)
+  const pantsCol = new THREE.Color(pantsHex)
   const shirtRgb = new THREE.Vector3(shirtCol.r, shirtCol.g, shirtCol.b)
   const pantsRgb = new THREE.Vector3(pantsCol.r, pantsCol.g, pantsCol.b)
 
@@ -387,10 +393,10 @@ function applyOutfitWaistShader(skinnedMesh) {
     metalness: 0.05,
   })
 
-  mat.customProgramCacheKey = () => `outfitWaist:${OUTFIT_SHIRT_HEX}:${OUTFIT_PANTS_HEX}:${OUTFIT_WAIST_HEIGHT_FRAC}:${OUTFIT_WAIST_SOFTNESS}`
+  mat.customProgramCacheKey = () => `outfitWaist:${pipelineKey}`
 
   mat.userData.uOutfitWaist = { value: waistY }
-  mat.userData.uOutfitBand = { value: OUTFIT_WAIST_SOFTNESS }
+  mat.userData.uOutfitBand = { value: waistSoftness }
   mat.userData.uOutfitShirt = { value: shirtRgb }
   mat.userData.uOutfitPants = { value: pantsRgb }
 
@@ -433,7 +439,7 @@ varying float vOutfitBindY;
   }
 
   skinnedMesh.material = mat
-  skinnedMesh.userData.outfitPipelineVersion = OUTFIT_PIPELINE_VERSION
+  skinnedMesh.userData.outfitPipelineKey = pipelineKey
 }
 
 // ─── Geometry mirror ──────────────────────────────────────────────────────────
@@ -616,6 +622,104 @@ const MII_BASE_Z    = 0.35
 const WALK_DURATION = 3.2
 const SKIP_ENTRY_Y  = 3.0
 const ENTRY_Z       = -8.5
+const MII_CAMERA_Z  = 6.0
+
+/** Curated safe transforms; randomized by shuffle each channel open. */
+const BACKGROUND_SLOT_POOL = [
+  { position: [-2.35, MII_BASE_Y, -0.70], rotationY: 0.53, scale: 1.0, shadowOpacity: 0.20 },
+  { position: [2.25, MII_BASE_Y, -0.66], rotationY: -0.49, scale: 1.0, shadowOpacity: 0.20 },
+  { position: [-1.65, MII_BASE_Y, -0.86], rotationY: 0.2, scale: 1.0, shadowOpacity: 0.18 },
+  { position: [1.72, MII_BASE_Y, -0.88], rotationY: -0.26, scale: 1.0, shadowOpacity: 0.18 },
+  { position: [-3.05, MII_BASE_Y, -0.62], rotationY: 0.86, scale: 1.0, shadowOpacity: 0.17 },
+  { position: [2.95, MII_BASE_Y, -0.60], rotationY: -0.82, scale: 1.0, shadowOpacity: 0.17 },
+  { position: [-2.65, MII_BASE_Y, -0.96], rotationY: Math.PI - 0.35, scale: 1.0, shadowOpacity: 0.16 },
+  { position: [2.7, MII_BASE_Y, -0.98], rotationY: -(Math.PI - 0.45), scale: 1.0, shadowOpacity: 0.16 },
+  { position: [-1.12, MII_BASE_Y, -1.06], rotationY: Math.PI, scale: 1.0, shadowOpacity: 0.14 },
+  { position: [1.15, MII_BASE_Y, -1.08], rotationY: -Math.PI, scale: 1.0, shadowOpacity: 0.14 },
+  { position: [-3.3, MII_BASE_Y, -0.76], rotationY: 1.15, scale: 1.0, shadowOpacity: 0.15 },
+  { position: [3.2, MII_BASE_Y, -0.78], rotationY: -1.12, scale: 1.0, shadowOpacity: 0.15 },
+]
+
+/** Keep random extras away from hero walk lane + thought area. */
+const BACKGROUND_BLOCK_CENTER = { x: MII_BASE_X, z: MII_BASE_Z }
+const BACKGROUND_BLOCK_RADIUS = 2.05
+/** Ensure the two random extras are visually separated. */
+const BACKGROUND_MIN_PAIR_DISTANCE = 2.25
+
+/**
+ * Head contract for future variants:
+ * - `headUrl`: optional GLB URL, omit/null for body-only extras.
+ * - `headOffset`: local offset relative to the `head` bone.
+ * - `headScale`: scalar multiplier on UNIT_SCALE/bodyScale.
+ */
+const BACKGROUND_CHARACTER_VARIANTS = [
+  {
+    id: 'female',
+    bodyUrl: '/assets/miiBody.glb',
+    bodyMeshName: 'torso_f_weights',
+    headUrl: '/female-mii.glb',
+    headOffset: [0, -0.075, 0],
+    headScale: 0.64,
+    bodyScaleMul: 0.9,
+    enableCustomOutfitShader: true,
+    outfitColors: { shirtHex: '#ef86b7', pantsHex: '#bebec4', waistHeightFrac: 0.352 },
+  },
+  {
+    id: 'male',
+    bodyUrl: '/assets/miiBody.glb',
+    bodyMeshName: 'torso_m_weights',
+    headUrl: null,
+    headOffset: [0, -0.075, 0],
+    headScale: 1,
+    bodyScaleMul: 1,
+    enableCustomOutfitShader: false,
+  },
+]
+
+function shuffleArray(list) {
+  const a = [...list]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function isOutsideHeroBlock(slot) {
+  const [x, , z] = slot.position
+  const dx = x - BACKGROUND_BLOCK_CENTER.x
+  const dz = z - BACKGROUND_BLOCK_CENTER.z
+  return Math.hypot(dx, dz) >= BACKGROUND_BLOCK_RADIUS
+}
+
+function pairDistance(a, b) {
+  const [ax, , az] = a.position
+  const [bx, , bz] = b.position
+  return Math.hypot(ax - bx, az - bz)
+}
+
+function pickBackgroundSlots(pool, count) {
+  const valid = shuffleArray(pool).filter(isOutsideHeroBlock)
+  if (valid.length <= count) return valid.slice(0, count)
+
+  if (count === 2) {
+    let bestPair = [valid[0], valid[1]]
+    let bestDist = pairDistance(valid[0], valid[1])
+    for (let i = 0; i < valid.length; i++) {
+      for (let j = i + 1; j < valid.length; j++) {
+        const d = pairDistance(valid[i], valid[j])
+        if (d >= BACKGROUND_MIN_PAIR_DISTANCE) return [valid[i], valid[j]]
+        if (d > bestDist) {
+          bestDist = d
+          bestPair = [valid[i], valid[j]]
+        }
+      }
+    }
+    return bestPair
+  }
+
+  return valid.slice(0, count)
+}
 
 function CameraAim() {
   const { camera } = useThree()
@@ -623,10 +727,156 @@ function CameraAim() {
   useEffect(() => {
     camera.position.set(0, 1.8, 6.0)
     camera.lookAt(0, -1.0, 0)
+    camera.fov = 48
     camera.updateProjectionMatrix()
   }, [camera])
 
   return null
+}
+
+function BackgroundMii({
+  bodyUrl,
+  bodyMeshName,
+  headUrl = null,
+  headOffset = [0, -0.075, 0],
+  headScale = 1,
+  bodyScaleMul = 1,
+  position = [0, MII_BASE_Y, -0.35],
+  rotationY = 0,
+  scale = 1.5,
+  shadowOpacity = 0.22,
+  enableCustomOutfitShader = false,
+  outfitColors = null,
+}) {
+  const { scene: bodySourceScene, animations } = useGLTF(bodyUrl)
+  const { scene: headSourceScene }             = useGLTF(headUrl || '/mii.glb')
+  const shadowTexture                          = useTexture('/assets/shadow.png')
+
+  const groupRef = useRef(null)
+  const mixerRef = useRef(null)
+  const bodySkeletonRef = useRef(null)
+
+  const preparedBodyScene = useMemo(() => {
+    if (!bodySourceScene) return null
+    const cloned = cloneSkeleton(bodySourceScene)
+
+    cloned.traverse((obj) => {
+      obj.matrixAutoUpdate = true
+      obj.matrixWorldAutoUpdate = true
+    })
+
+    cloned.traverse((obj) => {
+      if (!obj.isMesh) return
+      if (!obj.isSkinnedMesh) {
+        obj.visible = false
+        return
+      }
+      if (!obj.skeleton) {
+        obj.visible = false
+        return
+      }
+      if (bodyMeshName && obj.name !== bodyMeshName) {
+        obj.visible = false
+        return
+      }
+
+      obj.visible = true
+      obj.frustumCulled = false
+      bodySkeletonRef.current = obj.skeleton
+      if (!obj.userData.mirrored) {
+        mirrorGeometryX(obj)
+        obj.userData.mirrored = true
+      }
+      if (enableCustomOutfitShader) applyOutfitWaistShader(obj, outfitColors || undefined)
+    })
+
+    return cloned
+  }, [bodySourceScene, bodyMeshName, enableCustomOutfitShader, outfitColors])
+
+  const backgroundHeadScene = useMemo(() => {
+    if (!headUrl || !headSourceScene) return null
+    const cloned = headSourceScene.clone(true)
+    cloned.traverse((obj) => {
+      if (!obj.isMesh) return
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material]
+      mats.forEach((mat) => {
+        mat.roughness = 0.8
+        mat.metalness = 0.05
+        mat.needsUpdate = true
+      })
+    })
+    return cloned
+  }, [headSourceScene, headUrl])
+
+  const bodyBones = useMemo(() => {
+    const map = {}
+    if (!preparedBodyScene) return map
+    preparedBodyScene.traverse((obj) => {
+      if (obj.isBone) map[obj.name] = obj
+    })
+    return map
+  }, [preparedBodyScene])
+
+  useEffect(() => {
+    if (!headUrl) return
+    const headBone = bodyBones?.head
+    if (!headBone || !backgroundHeadScene) return
+    const [hx, hy, hz] = headOffset
+    backgroundHeadScene.scale.setScalar((UNIT_SCALE / scale) * headScale)
+    backgroundHeadScene.position.set(hx, hy, hz)
+    headBone.add(backgroundHeadScene)
+    return () => {
+      headBone.remove(backgroundHeadScene)
+      backgroundHeadScene.position.set(0, 0, 0)
+      backgroundHeadScene.scale.setScalar(1)
+    }
+  }, [bodyBones, backgroundHeadScene, headUrl, headOffset, headScale, scale])
+
+  useEffect(() => {
+    if (!preparedBodyScene || !animations?.length) return
+    const rawIdle = animations.find((a) => a.name === 'Idle')
+    if (!rawIdle) return
+
+    const mixer = new THREE.AnimationMixer(preparedBodyScene)
+    const idleAction = mixer.clipAction(deformClip(rawIdle, ARM_BONES_SET))
+    idleAction.setLoop(THREE.LoopRepeat, Infinity)
+    idleAction.play()
+    mixerRef.current = mixer
+
+    return () => {
+      mixer.stopAllAction()
+      mixer.uncacheRoot(preparedBodyScene)
+      mixerRef.current = null
+    }
+  }, [preparedBodyScene, animations])
+
+  useFrame((_state, delta) => {
+    if (!groupRef.current) return
+    if (mixerRef.current) mixerRef.current.update(delta)
+
+    Object.entries(ARM_DOWN_QUATERNIONS).forEach(([name, q]) => {
+      const bone = bodyBones?.[name]
+      if (bone) bone.quaternion.copy(q)
+    })
+    groupRef.current.updateMatrixWorld(true)
+    bodySkeletonRef.current?.update()
+  })
+
+  // Match apparent size to hero under perspective: scale ∝ cameraDistance.
+  const heroDistance = Math.max(0.0001, MII_CAMERA_Z - MII_BASE_Z)
+  const bgDistance = Math.max(0.0001, MII_CAMERA_Z - position[2])
+  const perspectiveComp = bgDistance / heroDistance
+  const finalScale = scale * BODY_SCALE * perspectiveComp * bodyScaleMul
+
+  return (
+    <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>
+      <mesh rotation={[-Math.PI / 2 + 0.4, 0, 0]} position={[0, -0.02, 0]}>
+        <planeGeometry args={[0.88, 0.88]} />
+        <meshBasicMaterial alphaMap={shadowTexture} transparent opacity={shadowOpacity} color={0x000000} depthWrite={false} />
+      </mesh>
+      {preparedBodyScene && <primitive object={preparedBodyScene} scale={finalScale} />}
+    </group>
+  )
 }
 
 function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
@@ -952,7 +1202,10 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
 }
 
 useGLTF.preload(MII_BODY_GLB_URL)
+useGLTF.preload('/assets/miiBody.glb')
 useGLTF.preload('/mii.glb')
+useGLTF.preload('/female-mii.glb')
+useGLTF.preload('/henry-mii.glb')
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -960,6 +1213,16 @@ export default function MiiChannel({ onClose }) {
   const [bubbleVisible, setBubbleVisible] = useState(false)
   const bubbleVisibleRef = useRef(false)
   const headBubbleScreenRef = useRef(null)
+
+  const backgroundConfigs = useMemo(() => {
+    const slots = pickBackgroundSlots(BACKGROUND_SLOT_POOL, BACKGROUND_CHARACTER_VARIANTS.length)
+    const chars = shuffleArray(BACKGROUND_CHARACTER_VARIANTS)
+    return chars.map((c, i) => ({
+      id: `bg-${c.id}-${i}`,
+      ...c,
+      ...slots[i],
+    }))
+  }, [])
 
   useEffect(() => {
     bubbleVisibleRef.current = bubbleVisible
@@ -999,6 +1262,9 @@ export default function MiiChannel({ onClose }) {
         <directionalLight position={[3, 6, 4]}  intensity={1.8} />
         <directionalLight position={[-2, 3, -2]} intensity={0.4} />
         <Suspense fallback={null}>
+          {backgroundConfigs.map((cfg) => (
+            <BackgroundMii key={cfg.id} {...cfg} />
+          ))}
           <MiiModel
             onArrived={() => setBubbleVisible(true)}
             bubbleVisibleRef={bubbleVisibleRef}
