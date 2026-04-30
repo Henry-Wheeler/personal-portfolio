@@ -2,6 +2,41 @@
 
 This file provides guidance to Codex (Codex.ai/code), Cursor agents, and other AI coding assistants working in this repository.
 
+## Project snapshot (Apr 2026)
+
+- **Public GitHub:** https://github.com/Henry-Wheeler/personal-portfolio — ship changes with normal `git add` / `commit` / `push` on meaningful milestones.
+- **Names:** Browser tab + README title **“Personal Portfolio”**; npm package name `personal-portfolio` in `package.json`.
+- **`.gitignore`:** Excludes `node_modules/`, `dist/`, `.env*`, local dumps (`.blend`, `.zip`, raw `Mii/` exports, etc.). Only the app + `public/` assets + `reference/` design refs are tracked.
+
+## Roadmap
+
+Product direction — **update this section when plans change.** Implementation order is not fixed here.
+
+### New channels (Wii-inspired)
+
+| Working name | Wii inspiration | Summary |
+|--------------|-----------------|---------|
+| **News Channel** | News Channel | Dark navy, white type, **scrolling ticker** with résumé highlights; click expands into a **timeline** (experience + education). |
+| **Forecast Channel** | Weather Channel | **Tech stack as a weather forecast** — sunny = strong, cloudy = familiar. Stack: Python, React, Swift, C++, D3.js, SQL, Three.js. |
+| **Creative Corner** | Original (not default blue-white) | **Warmer palette.** Sections: photography, drawing, music taste (The Hell, Tyler the Creator, Clairo, Uzi, Carti). |
+| **Project Plaza** | Plaza-style sub-grid | **Project tiles:** D3tection (YOLOv8 real-time Rubik’s cube + Three.js), InfoCraftic (Adobe hackathon browser extension), TNTAuto/AMNH (phylogenetic pipeline). Short descriptions + **GitHub** where applicable. |
+| **Website Guide** | Utility / meta | On open: **typed-out** explanation of **what each channel is**, **which Wii UI it echoes**, and a short **about this site** blurb. |
+| **Mii Parade** (contact) | Mii Parade | Small Miis walking on the **tile**; opens to **contact** — GitHub (Henry-Wheeler), LinkedIn, email as **Wii-style buttons**. **Lowest priority** — may skip if another contact pattern wins. |
+
+### About Mii channel (extras)
+
+- **Background Miis:** a **few** additional figures in **idle** at different positions/angles so the plaza feels fuller (not a crowd). Prototype when ready; mind **perf** (extra GLBs vs simpler placeholders).
+
+### UI / audio polish
+
+- **Done:** Mii channel **BGM** + **channel-select** + **thought-bubble appear** + **walk-in footsteps** via `public/audio/*` and `src/audio/miiChannelSfx.js` (volumes tunable there).  
+- **Later:** About Mii **tile cover art** refresh only (other grid tiles unchanged for now).
+
+### Footer & hosting
+
+- Wire **Footer** `CircButton`s (Wii / envelope) if desired.  
+- **Deploy** (e.g. Vercel) + **custom domain** when ready.
+
 ## Dev Server
 
 ```bash
@@ -37,7 +72,7 @@ App                  — scale/offset/cursor/tilt/openChannel state
 - `TILE_PATH`, `CURSOR_HAND_PATH`, `CURSOR_POINTER_PATH` — inlined SVG paths
 
 ### Channel system
-`openChannel` state in `App` (null = home). Panels are full-screen `position: absolute, zIndex: 50` divs rendered inside the canvas div. To add a channel: (1) add tile in `ChannelGrid` with `onClick={() => onOpen('key')}`, (2) build `YourPanel` component, (3) add `{openChannel === 'key' && <YourPanel onClose=... />}` in `App`.
+`openChannel` state in `App` (null = home). Panels are full-screen `position: absolute, zIndex: 50` divs rendered inside the canvas div. **About Mii** uses `openChannel === 'about'` (tile 0 calls `onOpen('about')`). To add a channel: (1) add tile in `ChannelGrid` with `onClick={() => onOpen('yourKey')}`, (2) build `YourPanel` component, (3) add `{openChannel === 'yourKey' && <YourPanel onClose=... />}` in `App`.
 
 ### Assets
 **`src/assets/`** (imported via Vite):
@@ -59,6 +94,12 @@ App                  — scale/offset/cursor/tilt/openChannel state
 - `henry-mii.glb` — head-only GLB from mii-unsecure API (NOT a full body — body endpoint returns 400)
 - `env0.png`, `env1.png` — environment map references
 - `shadow.png` — drop shadow sprite
+
+**`public/audio/`** (served at `/audio/` — wired in `src/audio/miiChannelSfx.js`):
+- `mii-plaza-bgm.mp3` — looped BGM while About Mii is open  
+- `channel-select.mp3` — channel tile open (from `App` → `onOpen`)  
+- `thought-bubble-appear.wav` — when the thought bubble becomes visible (after wave)  
+- `footstep-left.mp3` / `footstep-right.mp3` — walk-in, on alternating `sin(stepPhase)` zero crossings  
 
 ### Animations (`src/index.css`)
 Four keyframes: `tileAppear` (panel/tile entry), `floatBob` (±4px vertical bob), `pulseGlow` (opacity pulse), `miiWalk` (CSS walk bob — currently unused, walk handled by Three.js bones). Add new keyframes here — they're accessible to all inline `animation:` props.
@@ -119,7 +160,7 @@ After bone mutations: `groupRef.current.updateMatrixWorld(true)` then `skeleton.
 
 ## Mii Channel (`src/components/MiiChannel.jsx`)
 
-The "About Mii" channel panel. Uses `framer-motion` for speech bubble and `@react-three/fiber` + `@react-three/drei` for the 3D Mii model.
+The "About Mii" channel panel. Uses `framer-motion` for the thought-bubble entrance and `@react-three/fiber` + `@react-three/drei` for the 3D Mii model.
 
 ### Current status (2026)
 
@@ -128,11 +169,13 @@ The "About Mii" channel panel. Uses `framer-motion` for speech bubble and `@reac
 - **Idle:** `Idle` clip with arm tracks stripped + per-frame arm poses from `ARM_DOWN_QUATERNIONS` (biceps get a slight extra X rotation so arms read clearly “down” at sides).
 - **Look-around:** `look around` clip with arm tracks stripped; same arm locking as idle.
 - **Wave:** One-shot on arrival; then crossfade to idle and exponential slerp toward `ARM_DOWN_QUATERNIONS`.
-- Head (`/mii.glb`) parented to `head` bone; Mii Plaza floor canvas; speech bubble + typewriter; drop shadow plane under character.
+- Head (`/mii.glb`) parented to `head` bone; Mii Plaza floor canvas; **thought-bubble** UI + typewriter; drop shadow plane under character.
+- **Thought bubble (Wii Sports–style):** `ABOUT_SENTENCES` array — short, scannable lines (intro, majors, grad date, work/build, interests, sign-off). **One sentence per beat** with fixed SVG cloud size (no vertical grow-as-you-type). **Typewriter:** variable timing (`TYPEWRITER_MS_PER_CHAR` + extra pause on `,.;:!?`). **Tail:** three separate circles (large → small) from cloud bottom-left; **smallest circle** is the anchor. **`MiiModel`** each `useFrame` (while bubble visible) projects `bodyNodes.head` + `THOUGHT_HEAD_LOCAL_OFFSET`, then adds `MII_CANVAS_TRANSLATE_X` + `THOUGHT_HEAD_SCREEN_NUDGE_X/Y` so HTML aligns with the CSS-shifted `<Canvas>`. Writes **`headBubbleScreenRef`**; **`SpeechBubble`** polls ~32 ms and only re-renders when the point moves. Fallback `THOUGHT_HEAD_FALLBACK_*` until first sample.
+- **Canvas / HTML sync:** `MII_CANVAS_TRANSLATE_X` constant must match `translateX` on `<Canvas>` and the `+ MII_CANVAS_TRANSLATE_X` in the projection math.
 
 **Resolved:** Wave hand vs head clipping is no longer an issue in the current setup.
 
-**Next (planned):** Replace placeholder `ABOUT_TEXT` with real copy and **reposition the speech bubble** so it lines up with the Mii (today the bubble is centered on the full 1920×1080 channel while the Three.js `<Canvas>` is shifted with `translateX(340px)`, so the bubble reads misaligned).
+**Next (planned):** See **§ Roadmap** (channels, Mii extras, audio/art/SFX, footer, hosting). The last `ABOUT_SENTENCES` line already teases résumé/projects-style content.
 
 **Loader / mesh gotcha:** GLTF exposes a `body` skinned mesh without `skeleton`; the code hides it so `skeleton.update()` never runs on an invalid skin. The visible body is the mirrored skinned mesh.
 
@@ -228,13 +271,17 @@ WALK_DURATION = 3.2
 MII_BASE_X = 0
 MII_BASE_Z = 0.35
 ```
-Camera (Canvas): `position: [0, 1.8, 6.0]`, `fov: 48`. `CameraAim` (lookAt tweak) is only mounted when `WALK_ENTRY_MODE === 'depth'`. The R3F `<Canvas>` is offset with `translateX(340px)` to frame the character in the channel layout.
+Camera (Canvas): `position: [0, 1.8, 6.0]`, `fov: 48`. `CameraAim` (lookAt tweak) is only mounted when `WALK_ENTRY_MODE === 'depth'`. The R3F `<Canvas>` uses `transform: translateX(${MII_CANVAS_TRANSLATE_X}px)` (same constant as projection).
 
 ### Floor (`MiiPlazaFloor`)
 A `<canvas>` element draws `/assets/floor-quarter.png` mirrored into four quadrants. Radial white bloom at center. Working correctly.
 
-### Speech bubble / Typewriter
-Typewriter works at 40ms/char, triggered by `onAnimationComplete` of the bubble's framer-motion fade-in. `onArrived()` is called from the wave `finished` mixer event. **`ABOUT_TEXT`** is still placeholder copy. **Layout:** bubble uses `left: 50%` + `translateX(-50%)` on the full channel width; the 3D view is offset (`translateX(340px)` on `<Canvas>`), so the bubble does not visually center on the character — **fix alongside final copy.**
+### Thought bubble / typewriter (`SpeechBubble` in `MiiChannel.jsx`)
+
+- **Trigger:** Framer-motion bubble fade-in `onAnimationComplete` starts typing; **`onArrived`** (speech bubble visibility) still comes from the wave mixer **`finished`** event.
+- **Copy:** Edit the **`ABOUT_SENTENCES`** string array (not a single `ABOUT_TEXT`). Keep lines short for the fixed cloud **`THOUGHT_DISPLAY_W`** × **`THOUGHT_DISPLAY_H`**; text uses **`THOUGHT_TEXT_INSET`** % box + `overflow: hidden` + `word-break`.
+- **Typewriter:** `TYPEWRITER_MS_PER_CHAR`, `TYPEWRITER_PAUSE_COMMA_MS`, `TYPEWRITER_PAUSE_SENTENCE_MS`; `onComplete` advances sentence index after **`BETWEEN_SENTENCES_MS`**.
+- **Anchor tuning (in order):** (1) `THOUGHT_HEAD_LOCAL_OFFSET` (head-bone local), (2) `THOUGHT_HEAD_SCREEN_NUDGE_X/Y` (channel px after project), (3) SVG **`THOUGHT_TAIL_TIP_*`** / cloud path if the *shape* of the trail changes.
 
 ### Back button
 `PillButton` at bottom center, label "Wii Menu", calls `onClose`.
@@ -262,3 +309,4 @@ Pill-shaped button (546×148, borderRadius 170). Cyan border with inset silver s
 - **Capturing arm rest quaternions from bodyNodes at runtime**: Unreliable — depends on animation timing, possible stale closure, possible missing nodes. Instead hardcode from GLTF binary data and apply defensively each frame.
 - **baked mii animation as walk cycle**: NOT a walk cycle. It's a greeting/wave animation with 1 brief leg lift in 12.5s. Do not use for walk-in.
 - **ARM_BONES_SET deformClip stripping alone for arm rest**: Theoretically correct but unreliable in practice — track name parsing or Three.js version differences may prevent stripping. Must enforce arms in useFrame as backup.
+- **Thought bubble vs guessed pixel anchor:** Guessing `left`/`top` in channel space drifted from the real head once the canvas was `translateX`’d. Fix: **project `head` bone** each frame + **screen nudge** constants; keep `MII_CANVAS_TRANSLATE_X` in sync with the Canvas transform.

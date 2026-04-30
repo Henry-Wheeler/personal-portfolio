@@ -5,6 +5,12 @@ import { useGLTF, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 import { W, H, FONT } from '../constants'
 import PillButton from './PillButton'
+import {
+  createMiiPlazaBgm,
+  playFootstepLeft,
+  playFootstepRight,
+  playThoughtBubbleAppearSound,
+} from '../audio/miiChannelSfx'
 
 // ─── Floor ────────────────────────────────────────────────────────────────────
 
@@ -330,6 +336,106 @@ function SpeechBubble({ visible, headScreenRef }) {
   )
 }
 
+// ─── Outfit colors (shirt / pants) ────────────────────────────────────────────
+// Geometry splits always jag along triangle edges. Use **one mesh + MeshStandardMaterial**
+// with `onBeforeCompile`: bind-pose `position.y` varying + fragment `smoothstep` blends
+// shirt/pants per-pixel (anti-aliased waist). Tune OUTFIT_WAIST_SOFTNESS / HEIGHT_FRAC.
+const OUTFIT_PIPELINE_VERSION = 2
+
+const OUTFIT_SHIRT_HEX = '#141414'
+const OUTFIT_PANTS_HEX = '#238551'
+/** 0 = feet, 1 = top — waist cutoff in bind-pose Y (mesh local space) */
+const OUTFIT_WAIST_HEIGHT_FRAC = 0.445
+/** Half-width of smooth transition in mesh Y units (~2× this is full blend span). Larger = softer, less “saw tooth”. */
+const OUTFIT_WAIST_SOFTNESS = 0.028
+
+/** Cache-bust GLTF once after outfit pipeline changes (avoids stale modified geometry in Loader cache). */
+const MII_BODY_GLB_URL = '/assets/miiBodyMin.glb?v=outfitShader'
+
+function disposeOutfitMaterials(mat) {
+  if (!mat) return
+  const list = Array.isArray(mat) ? mat : [mat]
+  list.forEach((m) => m?.dispose?.())
+}
+
+function applyOutfitWaistShader(skinnedMesh) {
+  if (skinnedMesh.userData.outfitPipelineVersion === OUTFIT_PIPELINE_VERSION) return
+
+  const geo = skinnedMesh.geometry
+  const pos = geo.getAttribute('position')
+  if (!pos) return
+
+  let minY = Infinity
+  let maxY = -Infinity
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i)
+    if (y < minY) minY = y
+    if (y > maxY) maxY = y
+  }
+  const waistY = minY + Math.max(1e-6, maxY - minY) * OUTFIT_WAIST_HEIGHT_FRAC
+
+  disposeOutfitMaterials(skinnedMesh.material)
+
+  const shirtCol = new THREE.Color(OUTFIT_SHIRT_HEX)
+  const pantsCol = new THREE.Color(OUTFIT_PANTS_HEX)
+  const shirtRgb = new THREE.Vector3(shirtCol.r, shirtCol.g, shirtCol.b)
+  const pantsRgb = new THREE.Vector3(pantsCol.r, pantsCol.g, pantsCol.b)
+
+  const mat = new THREE.MeshStandardMaterial({
+    color:     0xffffff,
+    roughness: 0.8,
+    metalness: 0.05,
+  })
+
+  mat.customProgramCacheKey = () => `outfitWaist:${OUTFIT_SHIRT_HEX}:${OUTFIT_PANTS_HEX}:${OUTFIT_WAIST_HEIGHT_FRAC}:${OUTFIT_WAIST_SOFTNESS}`
+
+  mat.userData.uOutfitWaist = { value: waistY }
+  mat.userData.uOutfitBand = { value: OUTFIT_WAIST_SOFTNESS }
+  mat.userData.uOutfitShirt = { value: shirtRgb }
+  mat.userData.uOutfitPants = { value: pantsRgb }
+
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.uOutfitWaist = mat.userData.uOutfitWaist
+    shader.uniforms.uOutfitBand = mat.userData.uOutfitBand
+    shader.uniforms.uOutfitShirt = mat.userData.uOutfitShirt
+    shader.uniforms.uOutfitPants = mat.userData.uOutfitPants
+
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        '#include <common>\nvarying float vOutfitBindY;\n',
+      )
+      .replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\nvOutfitBindY = position.y;\n',
+      )
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+uniform float uOutfitWaist;
+uniform float uOutfitBand;
+uniform vec3 uOutfitShirt;
+uniform vec3 uOutfitPants;
+varying float vOutfitBindY;
+`,
+      )
+      .replace(
+        '#include <color_fragment>',
+        `#include <color_fragment>
+{
+  float outfitMix = smoothstep(uOutfitWaist - uOutfitBand, uOutfitWaist + uOutfitBand, vOutfitBindY);
+  diffuseColor.rgb = mix(uOutfitPants, uOutfitShirt, outfitMix);
+}
+`,
+      )
+  }
+
+  skinnedMesh.material = mat
+  skinnedMesh.userData.outfitPipelineVersion = OUTFIT_PIPELINE_VERSION
+}
+
 // ─── Geometry mirror ──────────────────────────────────────────────────────────
 // miiBodyMin.glb was exported without applying the Blender Mirror modifier,
 // so the mesh only covers X: 0→0.556 (one side). This function mirrors the
@@ -524,7 +630,7 @@ function CameraAim() {
 }
 
 function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
-  const { scene: bodyScene, nodes: bodyNodes, animations } = useGLTF('/assets/miiBodyMin.glb')
+  const { scene: bodyScene, nodes: bodyNodes, animations } = useGLTF(MII_BODY_GLB_URL)
   const { scene: headScene }                               = useGLTF('/mii.glb')
   const shadowTexture                                      = useTexture('/assets/shadow.png')
 
@@ -541,6 +647,8 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
   const lookAroundActiveRef   = useRef(false)
   const armRestoringRef       = useRef(false) // true while slerping arms back to rest after wave
   const wavingRef             = useRef(false) // true while wave action is playing
+  /** Walk-in stride sign; used to fire left/right footstep SFX on zero crossings. */
+  const prevStrideRef         = useRef(null)
   callbackRef.current = onArrived
 
 
@@ -564,17 +672,14 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
       obj.visible       = true
       obj.frustumCulled = false
       if (obj.isSkinnedMesh && obj.skeleton) bodySkeletonRef.current = obj.skeleton
-      // Guard: useGLTF caches the scene globally. If the channel is closed and
-      // reopened the same bodyScene object comes back. Without this guard,
-      // mirrorGeometryX calls geo.dispose() on the already-live GPU buffer →
-      // WebGL context loss. userData flags survive on the cached object.
-      if (!obj.userData.materialSet) {
-        obj.material = new THREE.MeshStandardMaterial({ color: '#5b9bd5', roughness: 0.8, metalness: 0.05 })
-        obj.userData.materialSet = true
-      }
-      if (obj.isSkinnedMesh && !obj.userData.mirrored) {
+      // Mirror first (doubles verts), then outfit vertex colors use final skin weights.
+      // Guards survive on cached GLTF scene — don't dispose mirrored geo (GPU leak risk).
+      if (obj.isSkinnedMesh && obj.skeleton && !obj.userData.mirrored) {
         mirrorGeometryX(obj)
         obj.userData.mirrored = true
+      }
+      if (obj.isSkinnedMesh && obj.skeleton) {
+        applyOutfitWaistShader(obj)
       }
     })
     return bodyScene
@@ -728,6 +833,7 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
     }
 
     if (arrivedRef.current) {
+      prevStrideRef.current = null
       groupRef.current.position.x = MII_BASE_X
       groupRef.current.position.y = MII_BASE_Y
       groupRef.current.position.z = MII_BASE_Z
@@ -765,6 +871,12 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
       const sp = bodyNodes?.['spine001']
       if (tl && tr) {
         const stride = Math.sin(stepPhase)
+        if (prevStrideRef.current !== null && prevStrideRef.current * stride < 0) {
+          if (prevStrideRef.current < 0) playFootstepRight()
+          else playFootstepLeft()
+        }
+        prevStrideRef.current = stride
+
         const swing  = stride * (WALK_ENTRY_MODE === 'skip' ? 0.62 : 0.34)
         const liftL  = Math.pow(Math.max(0, -stride), 1.8)
         const liftR  = Math.pow(Math.max(0,  stride), 1.8)
@@ -839,7 +951,7 @@ function MiiModel({ onArrived, bubbleVisibleRef, headBubbleScreenRef }) {
   )
 }
 
-useGLTF.preload('/assets/miiBodyMin.glb')
+useGLTF.preload(MII_BODY_GLB_URL)
 useGLTF.preload('/mii.glb')
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -851,6 +963,21 @@ export default function MiiChannel({ onClose }) {
 
   useEffect(() => {
     bubbleVisibleRef.current = bubbleVisible
+  }, [bubbleVisible])
+
+  useEffect(() => {
+    const bgm = createMiiPlazaBgm()
+    void bgm.play().catch(() => {})
+    return () => {
+      bgm.pause()
+      bgm.removeAttribute('src')
+      bgm.load()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!bubbleVisible) return
+    playThoughtBubbleAppearSound()
   }, [bubbleVisible])
 
   return (

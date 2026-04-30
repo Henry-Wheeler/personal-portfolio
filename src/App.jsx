@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { W, H, C, FONT } from './constants'
+import { playChannelSelectSound } from './audio/miiChannelSfx'
 import Stripes from './components/Stripes'
 import ChannelGrid from './components/ChannelGrid'
 import NavArrow from './components/NavArrow'
@@ -14,6 +15,10 @@ export default function App() {
   const [tilt, setTilt]     = useState(0)
   const [hasScrolled, setHasScrolled] = useState(false)
   const [openChannel, setOpenChannel] = useState(null)
+  const openChannelWithSound = useCallback((key) => {
+    playChannelSelectSound()
+    setOpenChannel(key)
+  }, [])
   const prevX = useRef(960)
   const tiltTarget = useRef(0)
   const animFrame = useRef(null)
@@ -93,7 +98,7 @@ export default function App() {
           pointerEvents: 'none',
         }} />
 
-        <ChannelGrid onOpen={setOpenChannel} />
+        <ChannelGrid onOpen={openChannelWithSound} />
 
         <NavArrow dir="right" visible={true}  onClick={() => setHasScrolled(true)} />
         <NavArrow dir="left"  visible={hasScrolled} onClick={() => {}} />
