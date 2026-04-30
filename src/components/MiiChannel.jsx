@@ -660,7 +660,7 @@ const BACKGROUND_CHARACTER_VARIANTS = [
     headUrl: '/female-mii.glb',
     headOffset: [0, -0.075, 0],
     headScale: 0.64,
-    bodyScaleMul: 0.9,
+    bodyScaleMul: 0.86,
     enableCustomOutfitShader: true,
     outfitColors: { shirtHex: '#ef86b7', pantsHex: '#bebec4', waistHeightFrac: 0.352 },
   },
@@ -668,13 +668,30 @@ const BACKGROUND_CHARACTER_VARIANTS = [
     id: 'male',
     bodyUrl: '/assets/miiBody.glb',
     bodyMeshName: 'torso_m_weights',
-    headUrl: null,
+    headUrl: '/male-mii.glb',
     headOffset: [0, -0.075, 0],
-    headScale: 1,
-    bodyScaleMul: 1,
-    enableCustomOutfitShader: false,
+    headScale: 0.64,
+    bodyScaleMul: 0.94,
+    enableCustomOutfitShader: true,
+    outfitColors: { shirtHex: '#4e79d9', pantsHex: '#6b4b34', waistHeightFrac: 0.445 },
   },
 ]
+
+/** Locked composition requested: hero appears to look between both background Miis. */
+const LOCKED_BACKGROUND_SLOTS_BY_ID = {
+  male: {
+    position: [3.2, MII_BASE_Y, -0.78],
+    rotationY: -1.12,
+    scale: 1.0,
+    shadowOpacity: 0.15,
+  },
+  female: {
+    position: [-3.3, MII_BASE_Y, -0.76],
+    rotationY: 1.15,
+    scale: 1.0,
+    shadowOpacity: 0.15,
+  },
+}
 
 function shuffleArray(list) {
   const a = [...list]
@@ -721,6 +738,12 @@ function pickBackgroundSlots(pool, count) {
   return valid.slice(0, count)
 }
 
+function backgroundIdlePhaseOffset(position, rotationY) {
+  const [x, , z] = position
+  const seed = Math.sin(x * 12.9898 + z * 78.233 + rotationY * 37.719) * 43758.5453
+  return seed - Math.floor(seed)
+}
+
 function CameraAim() {
   const { camera } = useThree()
 
@@ -755,6 +778,7 @@ function BackgroundMii({
   const groupRef = useRef(null)
   const mixerRef = useRef(null)
   const bodySkeletonRef = useRef(null)
+  const frameBudgetRef = useRef(0)
 
   const preparedBodyScene = useMemo(() => {
     if (!bodySourceScene) return null
@@ -781,11 +805,11 @@ function BackgroundMii({
       }
 
       obj.visible = true
-      obj.frustumCulled = false
+      obj.frustumCulled = true
       bodySkeletonRef.current = obj.skeleton
-      if (!obj.userData.mirrored) {
+      if (!obj.geometry?.userData?.mirroredX) {
         mirrorGeometryX(obj)
-        obj.userData.mirrored = true
+        if (obj.geometry) obj.geometry.userData.mirroredX = true
       }
       if (enableCustomOutfitShader) applyOutfitWaistShader(obj, outfitColors || undefined)
     })
@@ -838,8 +862,11 @@ function BackgroundMii({
     if (!rawIdle) return
 
     const mixer = new THREE.AnimationMixer(preparedBodyScene)
-    const idleAction = mixer.clipAction(deformClip(rawIdle, ARM_BONES_SET))
+    const idleClip = deformClip(rawIdle, ARM_BONES_SET)
+    const idleAction = mixer.clipAction(idleClip)
     idleAction.setLoop(THREE.LoopRepeat, Infinity)
+    const phase = backgroundIdlePhaseOffset(position, rotationY)
+    idleAction.time = phase * Math.max(0.001, idleClip.duration)
     idleAction.play()
     mixerRef.current = mixer
 
@@ -848,11 +875,15 @@ function BackgroundMii({
       mixer.uncacheRoot(preparedBodyScene)
       mixerRef.current = null
     }
-  }, [preparedBodyScene, animations])
+  }, [preparedBodyScene, animations, position, rotationY])
 
   useFrame((_state, delta) => {
     if (!groupRef.current) return
-    if (mixerRef.current) mixerRef.current.update(delta)
+    frameBudgetRef.current += delta
+    if (frameBudgetRef.current < 1 / 30) return
+    const tick = frameBudgetRef.current
+    frameBudgetRef.current = 0
+    if (mixerRef.current) mixerRef.current.update(tick)
 
     Object.entries(ARM_DOWN_QUATERNIONS).forEach(([name, q]) => {
       const bone = bodyBones?.[name]
@@ -871,8 +902,8 @@ function BackgroundMii({
   return (
     <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>
       <mesh rotation={[-Math.PI / 2 + 0.4, 0, 0]} position={[0, -0.02, 0]}>
-        <planeGeometry args={[0.88, 0.88]} />
-        <meshBasicMaterial alphaMap={shadowTexture} transparent opacity={shadowOpacity} color={0x000000} depthWrite={false} />
+        <planeGeometry args={[1.1, 1.1]} />
+        <meshBasicMaterial alphaMap={shadowTexture} transparent opacity={0.45} color={0x000000} depthWrite={false} />
       </mesh>
       {preparedBodyScene && <primitive object={preparedBodyScene} scale={finalScale} />}
     </group>
@@ -1205,6 +1236,7 @@ useGLTF.preload(MII_BODY_GLB_URL)
 useGLTF.preload('/assets/miiBody.glb')
 useGLTF.preload('/mii.glb')
 useGLTF.preload('/female-mii.glb')
+useGLTF.preload('/male-mii.glb')
 useGLTF.preload('/henry-mii.glb')
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -1215,12 +1247,11 @@ export default function MiiChannel({ onClose }) {
   const headBubbleScreenRef = useRef(null)
 
   const backgroundConfigs = useMemo(() => {
-    const slots = pickBackgroundSlots(BACKGROUND_SLOT_POOL, BACKGROUND_CHARACTER_VARIANTS.length)
-    const chars = shuffleArray(BACKGROUND_CHARACTER_VARIANTS)
-    return chars.map((c, i) => ({
+    const fallbackSlots = pickBackgroundSlots(BACKGROUND_SLOT_POOL, BACKGROUND_CHARACTER_VARIANTS.length)
+    return BACKGROUND_CHARACTER_VARIANTS.map((c, i) => ({
       id: `bg-${c.id}-${i}`,
       ...c,
-      ...slots[i],
+      ...(LOCKED_BACKGROUND_SLOTS_BY_ID[c.id] || fallbackSlots[i]),
     }))
   }, [])
 
@@ -1253,7 +1284,7 @@ export default function MiiChannel({ onClose }) {
 
       <Canvas
         style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', transform: `translateX(${MII_CANVAS_TRANSLATE_X}px)` }}
-        gl={{ alpha: true, antialias: true, powerPreference: 'default' }}
+        gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
         camera={{ position: [0, 1.8, 6.0], fov: 48 }}
         dpr={1}
       >
