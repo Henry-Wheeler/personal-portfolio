@@ -2,7 +2,7 @@
 
 A Wii Menu–inspired personal portfolio built with React and Three.js. Each "channel" on the home screen opens a full-screen experience styled after a different Wii application.
 
-**Live:** [henrywheeler.dev](https://henrywheeler.dev) <!-- update with your Vercel URL -->
+**Live:** [henry-wheeler.com](https://henry-wheeler.com)
 
 ---
 
