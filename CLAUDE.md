@@ -2,12 +2,12 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project snapshot (Apr 2026)
+## Project snapshot (May 2026)
 
 - **Public GitHub:** https://github.com/Henry-Wheeler/personal-portfolio — ship changes with normal `git add` / `commit` / `push` on meaningful milestones.
-- **Status:** Active development on `main`; latest updates (custom About Mii tile art, background Mii heads/outfits, render pop-in fixes) are pushed and deployed.
+- **Status:** Active development on `main`; latest updates (Skills Forecast channel, forecast tile art, PillButton resize) are pushed and deployed.
 - **Hosting:** Vercel project is connected to GitHub and auto-deploys from `main` (production URL in Vercel dashboard; custom domain can be added anytime).
-- **Names:** Browser tab + README title **“Personal Portfolio”**; npm package name `personal-portfolio` in `package.json`.
+- **Names:** Browser tab + README title **”Personal Portfolio”**; npm package name `personal-portfolio` in `package.json`.
 - **`.gitignore`:** Excludes `node_modules/`, `dist/`, `.env*`, local dumps (`.blend`, `.zip`, raw `Mii/` exports, etc.). Only the app + `public/` assets + `reference/` design refs are tracked.
 
 ## Roadmap
@@ -16,14 +16,15 @@ Product direction — **update this section when plans change.** Implementation 
 
 ### New channels (Wii-inspired)
 
-| Working name | Wii inspiration | Summary |
-|--------------|-----------------|---------|
-| **News Channel** | News Channel | Dark navy, white type, **scrolling ticker** with résumé highlights; click expands into a **timeline** (experience + education). |
-| **Forecast Channel** | Weather Channel | **Tech stack as a weather forecast** — sunny = strong, cloudy = familiar. Stack: Python, React, Swift, C++, D3.js, SQL, Three.js. |
-| **Creative Corner** | Original (not default blue-white) | **Warmer palette.** Sections: photography, drawing, music taste (The Hell, Tyler the Creator, Clairo, Uzi, Carti). |
-| **Project Plaza** | Plaza-style sub-grid | **Project tiles:** D3tection (YOLOv8 real-time Rubik’s cube + Three.js), InfoCraftic (Adobe hackathon browser extension), TNTAuto/AMNH (phylogenetic pipeline). Short descriptions + **GitHub** where applicable. |
-| **Website Guide** | Utility / meta | On open: **typed-out** explanation of **what each channel is**, **which Wii UI it echoes**, and a short **about this site** blurb. |
-| **Mii Parade** (contact) | Mii Parade | Small Miis walking on the **tile**; opens to **contact** — GitHub (Henry-Wheeler), LinkedIn, email as **Wii-style buttons**. **Lowest priority** — may skip if another contact pattern wins. |
+| Working name | Wii inspiration | Status | Summary |
+|--------------|-----------------|--------|---------|
+| **About Mii** | Mii Channel | ✅ Done | 3D Mii walk-in, wave, thought-bubble typewriter, background Miis, BGM. |
+| **Skills Forecast** | Weather Channel | ✅ Done | 5-card weather forecast layout. Hard/soft skill toggle (top nav tab). Banner pill rotates "Henry Wheeler" ↔ section name. Icons from MarioCube, BGM wired. Tile art generated + Gemini logo patched. |
+| **News Channel** | News Channel | Planned | Dark navy, white type, **scrolling ticker** with résumé highlights; click expands into a **timeline** (experience + education). |
+| **Project Plaza** | Plaza-style sub-grid | Planned | **Project tiles:** D3tection (YOLOv8 real-time Rubik’s cube + Three.js), InfoCraftic (Adobe hackathon browser extension), TNTAuto/AMNH (phylogenetic pipeline). Short descriptions + **GitHub** where applicable. |
+| **Creative Corner** | Original (warmer palette) | Planned | Sections: photography, drawing, music taste (The Hell, Tyler the Creator, Clairo, Uzi, Carti). |
+| **Website Guide** | Utility / meta | Planned | On open: typed-out explanation of what each channel is, which Wii UI it echoes, and a short about-this-site blurb. |
+| **Mii Parade** (contact) | Mii Parade | Low priority | Small Miis walking on the tile; opens to contact — GitHub (Henry-Wheeler), LinkedIn, email as Wii-style buttons. May skip if another contact pattern wins. |
 
 ### About Mii channel (extras)
 
@@ -31,8 +32,10 @@ Product direction — **update this section when plans change.** Implementation 
 
 ### UI / audio polish
 
-- **Done:** Mii channel **BGM** + **channel-select** + **thought-bubble appear** + **walk-in footsteps** via `public/audio/*` and `src/audio/miiChannelSfx.js` (volumes tunable there).  
-- **Done:** About Mii home tile now uses custom generated cover art (`src/assets/about-mii-tile.png`) instead of the old SVG preview.
+- **Done:** Mii channel **BGM** + **channel-select** + **thought-bubble appear** + **walk-in footsteps** via `public/audio/*` and `src/audio/miiChannelSfx.js` (volumes tunable there).
+- **Done:** About Mii home tile uses custom generated cover art (`src/assets/about-mii-tile.png`).
+- **Done:** Skills Forecast tile uses custom generated cover art (`src/assets/forecast-tile.png`); Gemini watermark removed via Pillow pixel patch.
+- **Done:** Forecast BGM at `public/audio/forecast-bgm.mp3`, looped at 0.45 volume.
 
 ### Footer & hosting
 
@@ -59,11 +62,12 @@ The entire UI lives inside a 1920×1080 div that scales to fit the viewport via 
 ```
 App                  — scale/offset/cursor/tilt/openChannel state
   Stripes            — decorative top gradient stripes
-  ChannelGrid        — 4×3 grid; tile 0 = About Mii (custom cover image)
+  ChannelGrid        — 4×3 grid; tile 0 = About Mii, tile 1 = Skills Forecast
     ChannelTile      — SVG tile shape (TILE_PATH from constants), shine/hover
   NavArrow           — left/right arrows; left hidden until first scroll
   Footer             — curved Union SVG bar + CircButton (Wii) + CircButton (email) + date
   MiiChannel         — full-screen overlay (zIndex 50) opened by tile 0
+  ForecastChannel    — full-screen overlay (zIndex 50) opened by tile 1
   WiiCursor          — SVG cursor tracking mouse with tilt, zIndex 9999
 ```
 
@@ -78,7 +82,8 @@ App                  — scale/offset/cursor/tilt/openChannel state
 
 ### Assets
 **`src/assets/`** (imported via Vite):
-- `about-mii-tile.png` — custom generated cover art used by the About Mii home tile
+- `about-mii-tile.png` — custom generated cover art for the About Mii home tile
+- `forecast-tile.png` — custom generated cover art for the Skills Forecast tile (Gemini watermark patched)
 - `mii-plaza.png` — floor tile + UI icon sprite sheet (too low-res to use at 1920×1080)
 - `wii-menu-banner.png` — Mii character reference sheet (Miis overlap, not extractable)
 - `body-part-icons.png` — Mii face/hair/eye part icons
@@ -100,11 +105,18 @@ App                  — scale/offset/cursor/tilt/openChannel state
 - `env0.png`, `env1.png` — environment map references
 - `shadow.png` — drop shadow sprite
 
+**`public/assets/`** (Forecast Channel icons — served at `/assets/`):
+- `forecast-bg.png` — actual Wii Forecast Channel blue gradient background image
+- `forecast-icons.png` — Spriters Resource sprite sheet (kept as reference; not used in production)
+- `wii-icon-sunny.png`, `wii-icon-partly-cloudy.png`, `wii-icon-cloudy.png`, `wii-icon-storm.png` — named icons used by current skill cards
+- `wii-icon-{8,9,11,12,13,16,25,28,29,31,33,34}.png` — additional Yahoo Weather code icons (transparent 192×192, from MarioCube)
+
 **`public/audio/`** (served at `/audio/` — wired in `src/audio/miiChannelSfx.js`):
-- `mii-plaza-bgm.mp3` — looped BGM while About Mii is open  
-- `channel-select.mp3` — channel tile open (from `App` → `onOpen`)  
-- `thought-bubble-appear.wav` — when the thought bubble becomes visible (after wave)  
-- `footstep-left.mp3` / `footstep-right.mp3` — walk-in, on alternating `sin(stepPhase)` zero crossings  
+- `mii-plaza-bgm.mp3` — looped BGM while About Mii is open
+- `channel-select.mp3` — channel tile open (from `App` → `onOpen`)
+- `thought-bubble-appear.wav` — when the thought bubble becomes visible (after wave)
+- `footstep-left.mp3` / `footstep-right.mp3` — walk-in, on alternating `sin(stepPhase)` zero crossings
+- `forecast-bgm.mp3` — looped BGM while Skills Forecast is open (loaded directly in ForecastChannel)
 
 ### Animations (`src/index.css`)
 Four keyframes: `tileAppear` (panel/tile entry), `floatBob` (±4px vertical bob), `pulseGlow` (opacity pulse), `miiWalk` (CSS walk bob — currently unused, walk handled by Three.js bones). Add new keyframes here — they're accessible to all inline `animation:` props.
@@ -296,7 +308,32 @@ A `<canvas>` element draws `/assets/floor-quarter.png` mirrored into four quadra
 - **Anchor tuning (in order):** (1) `THOUGHT_HEAD_LOCAL_OFFSET` (head-bone local), (2) `THOUGHT_HEAD_SCREEN_NUDGE_X/Y` (channel px after project), (3) SVG **`THOUGHT_TAIL_TIP_*`** / cloud path if the *shape* of the trail changes.
 
 ### Back button
-`PillButton` at bottom center, label "Wii Menu", calls `onClose`.
+`PillButton` at bottom-left (48px inset), `width={300} height={76} fontSize={34}`, label "Wii Menu", calls `onClose`.
+
+---
+
+## Skills Forecast Channel (`src/components/ForecastChannel.jsx`)
+
+Wii Forecast Channel recreation. Full-screen overlay, `zIndex: 50`. No Three.js — pure React + framer-motion.
+
+### Structure
+- **TopNav** — gray Wii-style nav bar. Tab shows "Soft Skills ▲" or "Technical ▲" depending on active view; clicking toggles view state.
+- **GreenBanner** — "SKILLS FORECAST" label + pill that rotates every 3s between "Henry Wheeler" and the current section name ("Technical Skills" / "Soft Skills") via `AnimatePresence`.
+- **DayCard** — dark blue gradient card: skill name header, weather icon (`<img>` filling full card width), italic descriptor label at bottom. No temperature numbers.
+- **BottomStrip** — single `linear-gradient(to right, #2184E2, #AE1937)` div; "supported by wheelernews" left, "As of..." timestamp right.
+- **BottomNav** — gray Wii nav bar with "Wii Menu" (calls `onClose`) + empty Globe tab.
+
+### Key values
+- Background: `forecast-bg.png` + `#1192d3` fallback.
+- Card gradient: `#3060D8 → #1E48B8 → #142E98 → #0E2070`.
+- Header gradient: `#2A3EA8 → #1A2E90 → #102070`.
+- Icon: `<img width="100%" height="auto">` (fills card width).
+- `HARD_DAYS` / `SOFT_DAYS` arrays hold `{ day, icon, label, isWeekend }` — edit these to change skill content.
+- Weather icon keys: `'sunny'`, `'partly-cloudy'`, `'cloudy'`, `'storm'`, `'rain'`, `'snow'`, `'moon'`, etc. — mapped in `ICON_FILES` to `/assets/wii-icon-*.png`.
+
+### Current skill data
+**Technical (HARD_DAYS):** C++ (Primary Language), Python (ML Research & Pipelines), Three.js (Used in D3tection), JS (Used in InfoCraftic), R (Used at AMNH).
+**Soft (SOFT_DAYS):** Excel, G-Suite (both Daily Use), Figma (UI Design), Communication (Cross-team & Client), Leadership (Exec Board Role).
 
 ---
 
@@ -304,7 +341,7 @@ A `<canvas>` element draws `/assets/floor-quarter.png` mirrored into four quadra
 Pure SVG Mii character component kept as a reusable asset/reference. It is no longer the default About Mii tile preview now that tile 0 uses image cover art.
 
 ## PillButton (`src/components/PillButton.jsx`)
-Pill-shaped button (546×148, borderRadius 170). Cyan border with inset silver shading. Hover adds cyan glow. Props: `label` (string), `onClick`.
+Pill-shaped button, borderRadius 170. Cyan border with inset silver shading. Hover adds cyan glow. Props: `label` (string), `onClick`, `width` (default 546), `height` (default 148), `fontSize` (default 59). MiiChannel uses `width={300} height={76} fontSize={34}`.
 
 ---
 
