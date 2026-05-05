@@ -744,6 +744,8 @@ function backgroundIdlePhaseOffset(position, rotationY) {
   return seed - Math.floor(seed)
 }
 
+// Force R3F to always treat the canvas as exactly W×H regardless of what the
+
 function CameraAim() {
   const { camera } = useThree()
 
@@ -1323,6 +1325,7 @@ export default function MiiChannel({ onClose }) {
         gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
         camera={{ position: [0, 1.8, 6.0], fov: 48 }}
         dpr={1}
+        resize={{ offsetSize: true }}
       >
         {WALK_ENTRY_MODE === 'depth' && <CameraAim />}
         <ambientLight intensity={1.5} />

@@ -29,6 +29,11 @@ coverage/
 *.swp
 *.swo
 
+# Claude Code / AI tooling (local only)
+CLAUDE.md
+AGENTS.md
+.claude/
+
 # — Not needed to build the Vite app (keep locally; don’t ship in public repo) —
 *.blend
 *.blend1
