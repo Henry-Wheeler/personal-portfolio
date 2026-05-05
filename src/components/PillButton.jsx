@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { C, FONT } from '../constants'
 
-export default function PillButton({ label, onClick }) {
+export default function PillButton({ label, onClick, width = 546, height = 148, fontSize = 59 }) {
   const [hov, setHov] = useState(false)
   return (
     <div
@@ -9,7 +9,7 @@ export default function PillButton({ label, onClick }) {
       onMouseLeave={() => setHov(false)}
       onClick={onClick}
       style={{
-        width: 546, height: 148,
+        width, height,
         borderRadius: 170,
         backgroundColor: 'rgb(227,232,239)',
         border: `4px solid ${C.cyan}`,
@@ -21,7 +21,7 @@ export default function PillButton({ label, onClick }) {
         transition: 'box-shadow 0.15s ease',
       }}
     >
-      <span style={{ fontFamily: FONT, fontSize: 59, fontWeight: 500, color: C.textDark }}>
+      <span style={{ fontFamily: FONT, fontSize, fontWeight: 500, color: C.textDark }}>
         {label}
       </span>
     </div>

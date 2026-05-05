@@ -2,6 +2,7 @@ import React from 'react'
 import { W, C, FONT } from '../constants'
 import ChannelTile from './ChannelTile'
 import aboutMiiTile from '../assets/about-mii-tile.png'
+import forecastTile from '../assets/forecast-tile.png'
 
 const CHANNELS = Array.from({ length: 12 }, (_, i) => ({ id: i }))
 
@@ -35,6 +36,23 @@ export default function ChannelGrid({ onOpen }) {
             />
           </ChannelTile>
         )
+
+        if (i === 1) return (
+          <ChannelTile
+            key={ch.id}
+            delay={i * 30}
+            bgColor="rgb(74,158,220)"
+            borderColor="rgb(48,118,185)"
+            onClick={() => onOpen('forecast')}
+          >
+            <img
+              src={forecastTile}
+              alt="Skills Forecast channel"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </ChannelTile>
+        )
+
         return <ChannelTile key={ch.id} delay={i * 30} />
       })}
     </div>

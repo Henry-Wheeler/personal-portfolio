@@ -1343,10 +1343,9 @@ export default function MiiChannel({ onClose }) {
       <SpeechBubble visible={bubbleVisible} headScreenRef={headBubbleScreenRef} />
 
       <div style={{
-        position: 'absolute', bottom: 28, left: 0, width: W,
-        display: 'flex', justifyContent: 'center', zIndex: 10,
+        position: 'absolute', bottom: 28, left: 48, zIndex: 10,
       }}>
-        <PillButton label="Wii Menu" onClick={onClose} />
+        <PillButton label="Wii Menu" onClick={onClose} width={300} height={76} fontSize={34} />
       </div>
     </div>
   )

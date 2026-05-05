@@ -5,6 +5,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project snapshot (Apr 2026)
 
 - **Public GitHub:** https://github.com/Henry-Wheeler/personal-portfolio — ship changes with normal `git add` / `commit` / `push` on meaningful milestones.
+- **Status:** Active development on `main`; latest updates (custom About Mii tile art, background Mii heads/outfits, render pop-in fixes) are pushed and deployed.
+- **Hosting:** Vercel project is connected to GitHub and auto-deploys from `main` (production URL in Vercel dashboard; custom domain can be added anytime).
 - **Names:** Browser tab + README title **“Personal Portfolio”**; npm package name `personal-portfolio` in `package.json`.
 - **`.gitignore`:** Excludes `node_modules/`, `dist/`, `.env*`, local dumps (`.blend`, `.zip`, raw `Mii/` exports, etc.). Only the app + `public/` assets + `reference/` design refs are tracked.
 
@@ -25,17 +27,18 @@ Product direction — **update this section when plans change.** Implementation 
 
 ### About Mii channel (extras)
 
-- **Background Miis:** a **few** additional figures in **idle** at different positions/angles so the plaza feels fuller (not a crowd). **Current live state in `MiiChannel.jsx`:** 2 extras (1 female + 1 male) from `/assets/miiBody.glb` (`torso_f_weights` / `torso_m_weights`) selected from a curated shuffled slot pool with center exclusion + min pair spacing. Female currently uses `/female-mii.glb` head + pink/light-gray outfit; male is body-only for now.
+- **Background Miis:** a **few** additional figures in **idle** at different positions/angles so the plaza feels fuller (not a crowd). **Current live state in `MiiChannel.jsx`:** 2 extras (1 female + 1 male) from `/assets/miiBody.glb` (`torso_f_weights` / `torso_m_weights`) with locked composition slots. Female uses `/female-mii.glb` + pink/light-gray outfit; male uses `/male-mii.glb` + blue/brown outfit. Both use per-character idle phase offsets so they do not animate perfectly in sync.
 
 ### UI / audio polish
 
 - **Done:** Mii channel **BGM** + **channel-select** + **thought-bubble appear** + **walk-in footsteps** via `public/audio/*` and `src/audio/miiChannelSfx.js` (volumes tunable there).  
-- **Later:** About Mii **tile cover art** refresh only (other grid tiles unchanged for now).
+- **Done:** About Mii home tile now uses custom generated cover art (`src/assets/about-mii-tile.png`) instead of the old SVG preview.
 
 ### Footer & hosting
 
 - Wire **Footer** `CircButton`s (Wii / envelope) if desired.  
-- **Deploy** (e.g. Vercel) + **custom domain** when ready.
+- **Hosting live on Vercel:** connected to this GitHub repo; pushes to `main` trigger production deploys.  
+- **Next hosting step:** add custom domain when ready.
 
 ## Dev Server
 
@@ -56,9 +59,8 @@ The entire UI lives inside a 1920×1080 div that scales to fit the viewport via 
 ```
 App                  — scale/offset/cursor/tilt/openChannel state
   Stripes            — decorative top gradient stripes
-  ChannelGrid        — 4×3 grid; tile 0 = About Mii (shows HenryMii SVG preview)
+  ChannelGrid        — 4×3 grid; tile 0 = About Mii (custom cover image)
     ChannelTile      — SVG tile shape (TILE_PATH from constants), shine/hover
-    HenryMii         — SVG Mii character used as tile 0 preview icon
   NavArrow           — left/right arrows; left hidden until first scroll
   Footer             — curved Union SVG bar + CircButton (Wii) + CircButton (email) + date
   MiiChannel         — full-screen overlay (zIndex 50) opened by tile 0
@@ -76,6 +78,7 @@ App                  — scale/offset/cursor/tilt/openChannel state
 
 ### Assets
 **`src/assets/`** (imported via Vite):
+- `about-mii-tile.png` — custom generated cover art used by the About Mii home tile
 - `mii-plaza.png` — floor tile + UI icon sprite sheet (too low-res to use at 1920×1080)
 - `wii-menu-banner.png` — Mii character reference sheet (Miis overlap, not extractable)
 - `body-part-icons.png` — Mii face/hair/eye part icons
@@ -92,6 +95,8 @@ App                  — scale/offset/cursor/tilt/openChannel state
 **`public/`** (served at root):
 - `mii.glb` — Mii head model (loaded at `/mii.glb`)
 - `henry-mii.glb` — head-only GLB from mii-unsecure API (NOT a full body — body endpoint returns 400)
+- `female-mii.glb` — background female head variant
+- `male-mii.glb` — background male head variant
 - `env0.png`, `env1.png` — environment map references
 - `shadow.png` — drop shadow sprite
 
@@ -173,6 +178,7 @@ The "About Mii" channel panel. Uses `framer-motion` for the thought-bubble entra
 - **Thought bubble (Wii Sports–style):** `ABOUT_SENTENCES` array — short, scannable lines (intro, majors, grad date, work/build, interests, sign-off). **One sentence per beat** with fixed SVG cloud size (no vertical grow-as-you-type). **Typewriter:** variable timing (`TYPEWRITER_MS_PER_CHAR` + extra pause on `,.;:!?`). **Tail:** three separate circles (large → small) from cloud bottom-left; **smallest circle** is the anchor. **`MiiModel`** each `useFrame` (while bubble visible) projects `bodyNodes.head` + `THOUGHT_HEAD_LOCAL_OFFSET`, then adds `MII_CANVAS_TRANSLATE_X` + `THOUGHT_HEAD_SCREEN_NUDGE_X/Y` so HTML aligns with the CSS-shifted `<Canvas>`. Writes **`headBubbleScreenRef`**; **`SpeechBubble`** polls ~32 ms and only re-renders when the point moves. Fallback `THOUGHT_HEAD_FALLBACK_*` until first sample.
 - **Canvas / HTML sync:** `MII_CANVAS_TRANSLATE_X` constant must match `translateX` on `<Canvas>` and the `+ MII_CANVAS_TRANSLATE_X` in the projection math.
 - **Background extras:** `BACKGROUND_SLOT_POOL` + `BACKGROUND_CHARACTER_VARIANTS` feed randomized (shuffled) but safe placements; `BackgroundMii` supports optional `headUrl`, `headOffset`, `headScale`, `bodyScaleMul`, and per-character `outfitColors`.
+- **Render stability:** hero/background groups are hidden until first valid pose is applied (`renderReady`) to avoid T-pose pop-in on open.
 
 **Resolved:** Wave hand vs head clipping is no longer an issue in the current setup.
 
@@ -275,7 +281,7 @@ MII_CAMERA_Z = 6.0 // used by background apparent-size compensation
 BACKGROUND_SLOT_POOL // curated safe transforms for background extras
 BACKGROUND_BLOCK_RADIUS = 2.05
 BACKGROUND_MIN_PAIR_DISTANCE = 2.25
-BACKGROUND_CHARACTER_VARIANTS // female+male variants (female head wired)
+BACKGROUND_CHARACTER_VARIANTS // female+male variants (both heads wired + custom outfits)
 ```
 Camera (Canvas): `position: [0, 1.8, 6.0]`, `fov: 48`. `CameraAim` (lookAt tweak) is only mounted when `WALK_ENTRY_MODE === 'depth'`. The R3F `<Canvas>` uses `transform: translateX(${MII_CANVAS_TRANSLATE_X}px)` (same constant as projection).
 
@@ -295,7 +301,7 @@ A `<canvas>` element draws `/assets/floor-quarter.png` mirrored into four quadra
 ---
 
 ## HenryMii (`src/components/HenryMii.jsx`)
-Pure SVG Mii character used as the tile 0 preview icon in `ChannelGrid`. Props: `width` (default 100), `height` (default 170). Features brown hair, teal eyes, dark navy outfit, blush marks.
+Pure SVG Mii character component kept as a reusable asset/reference. It is no longer the default About Mii tile preview now that tile 0 uses image cover art.
 
 ## PillButton (`src/components/PillButton.jsx`)
 Pill-shaped button (546×148, borderRadius 170). Cyan border with inset silver shading. Hover adds cyan glow. Props: `label` (string), `onClick`.
