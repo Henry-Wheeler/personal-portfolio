@@ -108,7 +108,7 @@ export default function Footer({ dateStr }) {
         pointerEvents: 'auto',
         cursor: 'pointer',
       }}>
-        <div style={{ position: 'absolute', left: 38, top: 1 }}>
+        <div style={{ position: 'absolute', left: 10, top: 1 }}>
           <CircButton>
             <svg
               width={96} height={64} viewBox="0 0 96 64"

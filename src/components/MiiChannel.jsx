@@ -145,6 +145,8 @@ const ABOUT_SENTENCES = [
   "Right now I'm building a real-time Rubik's cube detection system with computer vision and Three.js.",
   "I'm into skiing, hockey, aviation history, classical music, and photography.",
   "Still building this site too — more channels on the way.",
+  "Need help navigating the site or curious about how it was built? Check out the Channel Guide.",
+  "The guide is still a work in progress though!",
   "Nice to meet you!",
 ]
 
