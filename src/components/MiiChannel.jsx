@@ -152,7 +152,7 @@ const BETWEEN_SENTENCES_MS = 560
 const BUBBLE_FONT_SIZE = 23
 
 /** Same horizontal shift as `<Canvas style={{ transform: translateX(...) }}>` — tail anchor ties to scene framing. */
-const MII_CANVAS_TRANSLATE_X = 340
+const MII_CANVAS_TRANSLATE_X = 0
 
 /** Wii Sports–style thought graphic (SVG viewBox space). Tail exits bottom-left; dots shrink toward the player’s head. */
 const THOUGHT_VIEWBOX_W = 640
@@ -616,10 +616,10 @@ const BODY_SCALE    = 1.7
 const WALK_ENTRY_MODE = 'top'
 const MII_BASE_X    = 0
 const ENTRY_X       = -4.8
-const MII_BASE_Y    = -1.5
-const ENTRY_TOP_Y   = 1.9
+const MII_BASE_Y    = -0.1
+const ENTRY_TOP_Y   = 5.0
 const MII_BASE_Z    = 0.35
-const WALK_DURATION = 3.2
+const WALK_DURATION = 4.5
 const SKIP_ENTRY_Y  = 3.0
 const ENTRY_Z       = -8.5
 const MII_CAMERA_Z  = 6.0
@@ -671,7 +671,7 @@ const BACKGROUND_CHARACTER_VARIANTS = [
     headUrl: '/male-mii.glb',
     headOffset: [0, -0.075, 0],
     headScale: 0.64,
-    bodyScaleMul: 0.94,
+    bodyScaleMul: 0.86,
     enableCustomOutfitShader: true,
     outfitColors: { shirtHex: '#4e79d9', pantsHex: '#6b4b34', waistHeightFrac: 0.445 },
   },
@@ -750,8 +750,8 @@ function CameraAim() {
   const { camera } = useThree()
 
   useEffect(() => {
-    camera.position.set(0, 1.8, 6.0)
-    camera.lookAt(0, -1.0, 0)
+    camera.position.set(0, 4.2, 8.5)
+    camera.lookAt(0, 0, 0)
     camera.fov = 48
     camera.updateProjectionMatrix()
   }, [camera])
@@ -1323,11 +1323,11 @@ export default function MiiChannel({ onClose }) {
       <Canvas
         style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none', transform: `translateX(${MII_CANVAS_TRANSLATE_X}px)` }}
         gl={{ alpha: true, antialias: false, powerPreference: 'high-performance' }}
-        camera={{ position: [0, 1.8, 6.0], fov: 48 }}
+        camera={{ position: [0, 4.2, 8.5], fov: 48 }}
         dpr={1}
         resize={{ offsetSize: true }}
       >
-        {WALK_ENTRY_MODE === 'depth' && <CameraAim />}
+        <CameraAim />
         <ambientLight intensity={1.5} />
         <directionalLight position={[3, 6, 4]}  intensity={1.8} />
         <directionalLight position={[-2, 3, -2]} intensity={0.4} />
