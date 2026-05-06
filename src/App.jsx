@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 import { W, H, C, FONT } from './constants'
 import { playChannelSelectSound } from './audio/miiChannelSfx'
 import Stripes from './components/Stripes'
@@ -83,6 +84,7 @@ export default function App() {
       background: '#0d0d0d',
       position: 'relative',
     }}>
+      <Analytics />
       <div style={{
         position: 'absolute',
         left: offset.x,
