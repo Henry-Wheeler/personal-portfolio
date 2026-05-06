@@ -139,11 +139,12 @@ function useTypewriter(text, active, onComplete) {
 /** One line per beat — fixed bubble; no rambling, Wii-scan-friendly. */
 const ABOUT_SENTENCES = [
   "Hi! I'm Henry.",
-  "I'm studying two majors — CS + Math @ Santa Clara University.",
-  "Graduating June 2027.",
-  "Last summer I did research at the AMNH — evolution and phylogenetics.",
-  "I'm currently building out the physical build for my computer vision project — and the rest of this site.",
-  "I'm interested in skiing, hockey, aviation history, classical music, and photography.",
+  "I'm studying CS and Math at Santa Clara University.",
+  "I'll be graduating in June 2027.",
+  "Last summer I did research at the AMNH on evolution and phylogenetics.",
+  "Right now I'm building a real-time Rubik's cube detection system with computer vision and Three.js.",
+  "I'm into skiing, hockey, aviation history, classical music, and photography.",
+  "Still building this site too — more channels on the way.",
   "Nice to meet you!",
 ]
 
