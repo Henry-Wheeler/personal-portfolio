@@ -7,6 +7,7 @@ import NavArrow from './components/NavArrow'
 import Footer from './components/Footer'
 import MiiChannel from './components/MiiChannel'
 import ForecastChannel from './components/ForecastChannel'
+import GuideChannel from './components/GuideChannel'
 import WiiCursor from './components/WiiCursor'
 
 function getViewportFit() {
@@ -116,6 +117,7 @@ export default function App() {
 
         {openChannel === 'about'    && <MiiChannel      onClose={() => setOpenChannel(null)} />}
         {openChannel === 'forecast' && <ForecastChannel onClose={() => setOpenChannel(null)} />}
+        {openChannel === 'guide'    && <GuideChannel    onClose={() => setOpenChannel(null)} onOpen={openChannelWithSound} />}
 
         <WiiCursor x={cursor.x} y={cursor.y} tilt={tilt} />
       </div>

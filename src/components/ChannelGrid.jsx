@@ -53,6 +53,25 @@ export default function ChannelGrid({ onOpen }) {
           </ChannelTile>
         )
 
+        if (i === 4) return (
+          <ChannelTile
+            key={ch.id}
+            delay={i * 30}
+            bgColor="rgb(215,215,232)"
+            borderColor="rgb(170,170,200)"
+            onClick={() => onOpen('guide')}
+          >
+            <div style={{ textAlign: 'center', padding: '0 24px' }}>
+              <div style={{ fontFamily: 'inherit', fontSize: 18, fontWeight: 800, color: '#2a2a4a', letterSpacing: '0.01em' }}>
+                Channel Guide
+              </div>
+              <div style={{ fontFamily: 'inherit', fontSize: 13, color: '#5a5a7a', marginTop: 5 }}>
+                About this site
+              </div>
+            </div>
+          </ChannelTile>
+        )
+
         return <ChannelTile key={ch.id} delay={i * 30} />
       })}
     </div>
