@@ -13,7 +13,7 @@ A Wii Menu–inspired personal portfolio built with React and Three.js. Each "ch
 | **About Mii** | Mii Channel | Rigged 3D Mii character walks in, waves, and types out a personal intro in a thought bubble. Background Miis populate the plaza. |
 | **Skills Forecast** | Forecast Channel | Five-card weather forecast layout mapping technical and soft skills to weather icons. Toggle between hard and soft skills via the top nav. |
 | News Channel | News Channel | Scrolling ticker + expandable timeline of experience and education. *(In progress)* |
-| Project Plaza | Wii Plaza | Project showcase — D3tection, InfoCraftic, and more. *(Planned)* |
+| **Project Plaza** | Disc Channel | Two-disc project carousel with custom disc labels, Wii-style controls, SFX, and project detail cards. *(In progress)* |
 
 ---
 

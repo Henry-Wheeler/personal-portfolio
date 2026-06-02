@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="512" cy="512" r="498" fill="#D9DADB"/>
+  <circle cx="512" cy="512" r="465" fill="#2F6FB3"/>
+  <path d="M120 716C258 588 390 524 516 524C644 524 773 457 904 323V838H120V716Z" fill="#FFFFFF" fill-opacity="0.14"/>
+  <path d="M148 250H876" stroke="#9EE8FF" stroke-width="18" stroke-linecap="round" opacity="0.42"/>
+  <circle cx="512" cy="512" r="114" fill="white"/>
+  <circle cx="512" cy="512" r="82" fill="#E9E9EA" stroke="#A8ADB2" stroke-width="8"/>
+  <circle cx="512" cy="512" r="54" fill="#111"/>
+  <g transform="translate(118 314)">
+    <text x="0" y="0" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="78" font-weight="800" fill="white">Portfolio</text>
+    <text x="4" y="64" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="4" fill="white" fill-opacity="0.86">WII MENU / REACT / THREE.JS</text>
+  </g>
+  <g transform="translate(716 600)">
+    <rect x="0" y="0" width="154" height="112" rx="18" fill="white" fill-opacity="0.94"/>
+    <rect x="22" y="22" width="110" height="68" rx="8" fill="#2F6FB3"/>
+    <path d="M40 52H114M40 72H88" stroke="white" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="512" y="952" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="5" fill="white" fill-opacity="0.72">PROJECT PLAZA DISC</text>
+</svg>

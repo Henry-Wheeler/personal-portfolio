@@ -3,6 +3,7 @@ import { W, C, FONT } from '../constants'
 import ChannelTile from './ChannelTile'
 import aboutMiiTile from '../assets/about-mii-tile.png'
 import forecastTile from '../assets/forecast-tile.png'
+import projectPlazaTile from '../assets/project-plaza-tile.svg'
 
 const CHANNELS = Array.from({ length: 12 }, (_, i) => ({ id: i }))
 
@@ -48,6 +49,22 @@ export default function ChannelGrid({ onOpen }) {
             <img
               src={forecastTile}
               alt="Skills Forecast channel"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </ChannelTile>
+        )
+
+        if (i === 2) return (
+          <ChannelTile
+            key={ch.id}
+            delay={i * 30}
+            bgColor="rgb(86, 180, 225)"
+            borderColor="rgb(45, 142, 198)"
+            onClick={() => onOpen('plaza')}
+          >
+            <img
+              src={projectPlazaTile}
+              alt="Project Plaza channel"
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           </ChannelTile>

@@ -1,0 +1,18 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="512" cy="512" r="498" fill="#D9DADB"/>
+  <circle cx="512" cy="512" r="465" fill="#496B4F"/>
+  <path d="M160 774C248 620 362 528 503 499C649 469 766 393 864 270" stroke="#BEE6B8" stroke-width="28" stroke-linecap="round" opacity="0.7"/>
+  <path d="M196 348C317 419 413 470 503 499C601 532 690 589 804 746" stroke="#FFFFFF" stroke-width="18" stroke-linecap="round" opacity="0.32"/>
+  <circle cx="512" cy="512" r="114" fill="white"/>
+  <circle cx="512" cy="512" r="82" fill="#E9E9EA" stroke="#A8ADB2" stroke-width="8"/>
+  <circle cx="512" cy="512" r="54" fill="#111"/>
+  <g transform="translate(118 316)">
+    <text x="0" y="0" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="76" font-weight="800" fill="white">TNTAuto</text>
+    <text x="4" y="64" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="4" fill="white" fill-opacity="0.86">AMNH PHYLOGENETICS PIPELINE</text>
+  </g>
+  <g transform="translate(724 602)">
+    <circle cx="72" cy="72" r="72" fill="white" fill-opacity="0.92"/>
+    <path d="M72 30V114M36 54L72 78L108 54M42 110L72 78L102 110" stroke="#496B4F" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="512" y="952" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="5" fill="white" fill-opacity="0.72">PROJECT PLAZA DISC</text>
+</svg>

@@ -1,0 +1,26 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="512" cy="512" r="498" fill="#D9DADB"/>
+  <circle cx="512" cy="512" r="465" fill="#5FC4EA"/>
+  <circle cx="512" cy="512" r="114" fill="white"/>
+  <circle cx="512" cy="512" r="82" fill="#E9E9EA" stroke="#A8ADB2" stroke-width="8"/>
+  <circle cx="512" cy="512" r="54" fill="#111"/>
+  <path d="M130 250C245 135 411 83 575 112C470 173 395 265 349 386C310 487 300 599 315 723C206 623 137 473 130 250Z" fill="white" fill-opacity="0.12"/>
+  <g transform="translate(118 326)">
+    <text x="0" y="0" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="92" font-weight="800" fill="white">D3tection</text>
+    <text x="4" y="68" font-family="Arial, sans-serif" font-size="30" font-weight="700" letter-spacing="4" fill="white" fill-opacity="0.86">CV / YOLOv8 / THREE.JS</text>
+  </g>
+  <g transform="translate(702 596)">
+    <rect x="0" y="0" width="160" height="160" rx="18" fill="white" fill-opacity="0.95"/>
+    <path d="M20 20H140V140H20V20Z" fill="#292F45"/>
+    <path d="M20 20H60V60H20V20Z" fill="#F5D547"/>
+    <path d="M60 20H100V60H60V20Z" fill="#EF4E42"/>
+    <path d="M100 20H140V60H100V20Z" fill="#3CA35C"/>
+    <path d="M20 60H60V100H20V60Z" fill="#FFFFFF"/>
+    <path d="M60 60H100V100H60V60Z" fill="#377AE8"/>
+    <path d="M100 60H140V100H100V60Z" fill="#F27E2E"/>
+    <path d="M20 100H60V140H20V100Z" fill="#377AE8"/>
+    <path d="M60 100H100V140H60V100Z" fill="#3CA35C"/>
+    <path d="M100 100H140V140H100V100Z" fill="#FFFFFF"/>
+  </g>
+  <text x="512" y="952" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="5" fill="white" fill-opacity="0.72">PROJECT PLAZA DISC</text>
+</svg>

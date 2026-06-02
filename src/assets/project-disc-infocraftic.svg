@@ -1,0 +1,20 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="512" cy="512" r="498" fill="#D9DADB"/>
+  <circle cx="512" cy="512" r="465" fill="#5B6FE8"/>
+  <path d="M64 512C64 265 265 64 512 64C608 64 697 94 770 145L512 512L64 512Z" fill="#7DE0C4" fill-opacity="0.28"/>
+  <path d="M512 512L820 187C908 269 960 386 960 512C960 632 912 741 835 821L512 512Z" fill="#FFFFFF" fill-opacity="0.16"/>
+  <circle cx="512" cy="512" r="114" fill="white"/>
+  <circle cx="512" cy="512" r="82" fill="#E9E9EA" stroke="#A8ADB2" stroke-width="8"/>
+  <circle cx="512" cy="512" r="54" fill="#111"/>
+  <g transform="translate(116 314)">
+    <text x="0" y="0" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="82" font-weight="800" fill="white">InfoCraftic</text>
+    <text x="4" y="66" font-family="Arial, sans-serif" font-size="29" font-weight="700" letter-spacing="4" fill="white" fill-opacity="0.86">ADOBE HACKATHON EXTENSION</text>
+  </g>
+  <g transform="translate(700 604)">
+    <rect x="0" y="0" width="170" height="120" rx="18" fill="white" fill-opacity="0.96"/>
+    <rect x="22" y="24" width="126" height="72" rx="9" fill="#24304C"/>
+    <path d="M42 45H128" stroke="#7DE0C4" stroke-width="10" stroke-linecap="round"/>
+    <path d="M42 72H96" stroke="#FFCE64" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <text x="512" y="952" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" font-weight="700" letter-spacing="5" fill="white" fill-opacity="0.72">PROJECT PLAZA DISC</text>
+</svg>

@@ -3,6 +3,7 @@ import { W, H, FONT } from '../constants'
 import PillButton from './PillButton'
 import aboutMiiTile from '../assets/about-mii-tile.png'
 import forecastTile from '../assets/forecast-tile.png'
+import projectPlazaTile from '../assets/project-plaza-tile.svg'
 
 const INTRO = "Welcome to the guide. This portfolio is built as a Wii Menu — each tile opens a channel inspired by a real Nintendo Wii app. Below is a breakdown of what's here, how each piece was made, and what's still on the way."
 
@@ -25,11 +26,19 @@ const BUILT = [
     tech: ['React', 'framer-motion'],
     credit: 'Weather icons via MarioCube · Background from the Wii Forecast Channel',
   },
+  {
+    key: 'plaza',
+    name: 'Project Plaza',
+    inspiration: 'Disc Channel',
+    tile: projectPlazaTile,
+    description: 'A Wii Disc Channel-inspired project shelf. Pick a project disc, press Start, and open a focused project card.',
+    tech: ['React', 'Disc Channel UI assets', 'CSS animation'],
+    credit: 'Disc Channel interface textures and disc artwork adapted from Wii reference assets',
+  },
 ]
 
 const COMING = [
   { name: 'News Channel',    inspiration: 'Wii News Channel', teaser: 'Scrolling ticker and an expandable career and education timeline.' },
-  { name: 'Project Plaza',   inspiration: 'Wii Plaza',        teaser: 'Project showcase — D3tection, InfoCraftic, and more.' },
   { name: 'Creative Corner', inspiration: 'Original',         teaser: 'Photography, drawing, and music.' },
 ]
 
@@ -37,6 +46,7 @@ const CREDITS = [
   ['Mii head models',  'mii-unsecure API by ariankordi'],
   ['Mii body rig',     'miiBodyMin.glb (custom rigged model)'],
   ['Weather icons',    'MarioCube · Yahoo Weather icon set'],
+  ['Disc Channel UI',  'Wii Disc Channel reference assets'],
   ['Typeface',         'M PLUS Rounded 1c via Google Fonts'],
   ['BGM',              'Wii Plaza & Forecast Channel themes (Nintendo)'],
   ['Built with',       'React, Vite, Three.js / @react-three/fiber, framer-motion'],

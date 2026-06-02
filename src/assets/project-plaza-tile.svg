@@ -1,0 +1,28 @@
+<svg width="760" height="410" viewBox="0 0 760 410" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="760" height="410" rx="34" fill="#F7F8FA"/>
+  <path d="M0 0H760V92H0V0Z" fill="url(#top)"/>
+  <path d="M0 118C125 72 251 72 379 118C507 163 634 163 760 118V410H0V118Z" fill="url(#floor)"/>
+  <circle cx="292" cy="156" r="88" fill="#D9DADB"/>
+  <circle cx="292" cy="156" r="80" fill="#5FC4EA"/>
+  <circle cx="292" cy="156" r="22" fill="white"/>
+  <circle cx="292" cy="156" r="12" fill="#C8CDD2"/>
+  <circle cx="494" cy="178" r="64" fill="#D9DADB"/>
+  <circle cx="494" cy="178" r="58" fill="#5B6FE8"/>
+  <circle cx="494" cy="178" r="17" fill="white"/>
+  <circle cx="494" cy="178" r="9" fill="#C8CDD2"/>
+  <ellipse cx="292" cy="256" rx="94" ry="15" fill="#9FA3AA" opacity="0.18"/>
+  <ellipse cx="494" cy="256" rx="66" ry="11" fill="#9FA3AA" opacity="0.14"/>
+  <text x="380" y="330" text-anchor="middle" font-family="Arial Rounded MT Bold, Arial, sans-serif" font-size="44" font-weight="800" fill="#444B59">PROJECT PLAZA</text>
+  <text x="380" y="364" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="700" letter-spacing="4" fill="#6B7484">DISC CHANNEL</text>
+  <defs>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="92" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#43C8F3"/>
+      <stop offset="1" stop-color="#1C9EDB"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="118" x2="0" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="0.56" stop-color="#EEF0F2"/>
+      <stop offset="1" stop-color="#D9DAD6"/>
+    </linearGradient>
+  </defs>
+</svg>
