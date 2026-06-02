@@ -40,7 +40,7 @@ export default function App() {
 
   const now  = new Date()
   const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
-  const dateStr = `${days[now.getDay()]} ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}`
+  const dateStr = `${days[now.getDay()]} ${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`
 
   useEffect(() => {
     const update = () => {
